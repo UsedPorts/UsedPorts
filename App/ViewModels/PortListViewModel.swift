@@ -95,6 +95,28 @@ public final class PortListViewModel: ObservableObject {
         case (.user, .multiSelect(let set)): return set.contains(e.user)
         case (.user, .text(let t, _)):
             return matchesTokens(t, against: e.user)
+        case (.proto, .compound(let sel, let t)):
+            let proto = e.proto.rawValue
+            if sel.contains(proto) { return true }
+            if !t.isEmpty, Self.matchesTokens(t, against: proto) { return true }
+            if sel.isEmpty && t.isEmpty { return true }
+            return false
+        case (.state, .compound(let sel, let t)):
+            let st = e.state ?? ""
+            if sel.contains(st) { return true }
+            if !t.isEmpty, Self.matchesTokens(t, against: st) { return true }
+            if sel.isEmpty && t.isEmpty { return true }
+            return false
+        case (.user, .compound(let sel, let t)):
+            if sel.contains(e.user) { return true }
+            if !t.isEmpty, Self.matchesTokens(t, against: e.user) { return true }
+            if sel.isEmpty && t.isEmpty { return true }
+            return false
+        case (.address, .compound(let sel, let t)):
+            if sel.contains(e.localAddress) { return true }
+            if !t.isEmpty, AddressMatcher.matches(localAddress: e.localAddress, query: t) { return true }
+            if sel.isEmpty && t.isEmpty { return true }
+            return false
         case (.started, .timeRange(let from, let to)):
             guard let st = e.startTime else { return from == nil && to == nil }
             if let from, st < from { return false }

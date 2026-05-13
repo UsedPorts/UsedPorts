@@ -144,6 +144,7 @@ public enum ColumnFilter: Hashable, Codable {
     case multiSelect(Set<String>)
     case text(String, regex: Bool)
     case timeRange(Date?, Date?)
+    case compound(selected: Set<String>, text: String)
 
     public var isEmpty: Bool {
         switch self {
@@ -151,6 +152,7 @@ public enum ColumnFilter: Hashable, Codable {
         case .multiSelect(let s): return s.isEmpty
         case .text(let t, _): return t.isEmpty
         case .timeRange(let a, let b): return a == nil && b == nil
+        case .compound(let sel, let t): return sel.isEmpty && t.isEmpty
         }
     }
 }

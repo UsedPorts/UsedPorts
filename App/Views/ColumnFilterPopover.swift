@@ -13,6 +13,8 @@ struct ColumnFilterPopover: View {
     @State private var fromDate: Date = Date()
     @State private var toDate: Date = Date()
     @State private var preset: String = "any"
+    @State private var compoundText: String = ""
+    @State private var compoundSelected: Set<String> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -25,6 +27,8 @@ struct ColumnFilterPopover: View {
                     textInput = ""
                     selected = []
                     preset = "any"
+                    compoundText = ""
+                    compoundSelected = []
                 }
                 Spacer()
                 Button("Done") { isPresented = false }
@@ -44,12 +48,17 @@ struct ColumnFilterPopover: View {
         case .text(let t, let r):
             textInput = t
             useRegex = r
+            compoundText = t
         case .multiSelect(let s):
             selected = s
+            compoundSelected = s
         case .timeRange(let from, let to):
             if let from { fromDate = from }
             if let to { toDate = to }
             preset = "custom"
+        case .compound(let sel, let t):
+            compoundSelected = sel
+            compoundText = t
         case .none:
             break
         }
@@ -61,17 +70,79 @@ struct ColumnFilterPopover: View {
         case .pid, .port:
             numberFilter
         case .proto:
-            tokenTextFilter(placeholder: "TCP, UDP")
+            compoundFilter(placeholder: "TCP, UDP", options: ["TCP", "UDP"], collapsible: false)
         case .process:
             textFilter
         case .address:
-            addressTextFilter
+            compoundFilter(
+                placeholder: "127.0.0.1, 192.168.1.0/24, ::1",
+                options: availableValues,
+                collapsible: true
+            )
         case .state:
-            tokenTextFilter(placeholder: "LISTEN, ESTABLISHED")
+            compoundFilter(
+                placeholder: "LISTEN, ESTABLISHED",
+                options: availableValues,
+                collapsible: false
+            )
         case .user:
-            tokenTextFilter(placeholder: "name, _postgres")
+            compoundFilter(
+                placeholder: "name, _postgres",
+                options: availableValues,
+                collapsible: false
+            )
         case .started:
             timeRangeFilter
+        }
+    }
+
+    @ViewBuilder
+    private func compoundFilter(placeholder: String, options: [String], collapsible: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Filter (comma separated, partial match)").font(.caption)
+            TextField(placeholder, text: $compoundText, onCommit: applyCompound)
+                .textFieldStyle(.roundedBorder)
+            Button("Apply") { applyCompound() }
+            if !options.isEmpty {
+                Divider()
+                if collapsible {
+                    DisclosureGroup("발견된 값 (\(options.count))") {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 2) {
+                                ForEach(options, id: \.self) { opt in
+                                    compoundCheckboxRow(opt)
+                                }
+                            }
+                        }
+                        .frame(maxHeight: 200)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(options, id: \.self) { opt in
+                            compoundCheckboxRow(opt)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func compoundCheckboxRow(_ opt: String) -> some View {
+        Toggle(opt.isEmpty ? "(empty)" : opt, isOn: Binding(
+            get: { compoundSelected.contains(opt) },
+            set: { on in
+                if on { compoundSelected.insert(opt) } else { compoundSelected.remove(opt) }
+                applyCompound()
+            }
+        ))
+    }
+
+    private func applyCompound() {
+        let trimmed = compoundText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty && compoundSelected.isEmpty {
+            viewModel.filter.byColumn.removeValue(forKey: column)
+        } else {
+            viewModel.filter.byColumn[column] = .compound(selected: compoundSelected, text: trimmed)
         }
     }
 

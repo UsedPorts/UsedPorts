@@ -80,6 +80,36 @@ final class PortListViewModelTests: XCTestCase {
         XCTAssertEqual(r.map(\.processName), ["Chrome"])
     }
 
+    func test_filterByCompound_textOnlyMatches() {
+        var f = FilterState()
+        f.byColumn[.user] = .compound(selected: [], text: "name")
+        let r = PortListViewModel.apply(
+            sort: SortSpec(column: .port, dir: .asc),
+            filter: f,
+            to: makeEntries())
+        XCTAssertEqual(Set(r.map(\.processName)), Set(["node", "Chrome"]))
+    }
+
+    func test_filterByCompound_selectionOnlyMatches() {
+        var f = FilterState()
+        f.byColumn[.user] = .compound(selected: ["_postgres"], text: "")
+        let r = PortListViewModel.apply(
+            sort: SortSpec(column: .port, dir: .asc),
+            filter: f,
+            to: makeEntries())
+        XCTAssertEqual(r.map(\.processName), ["postgres"])
+    }
+
+    func test_filterByCompound_textOrSelection() {
+        var f = FilterState()
+        f.byColumn[.user] = .compound(selected: ["_postgres"], text: "name")
+        let r = PortListViewModel.apply(
+            sort: SortSpec(column: .port, dir: .asc),
+            filter: f,
+            to: makeEntries())
+        XCTAssertEqual(r.count, 3)
+    }
+
     func test_globalSearch_matchesPid() {
         var f = FilterState()
         f.globalSearch = "200"

@@ -14,85 +14,286 @@ struct DetailPaneView: View {
     private let killer = KillSupervisor()
 
     var body: some View {
+        baseStack
+            .padding(8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .onChange(of: viewModel.selection) { _, _ in refreshAugment() }
+            .alert(item: $killConfirm, content: killAlert)
+    }
+
+    private var baseStack: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if let entry = currentEntry {
-                detail(for: entry)
-            } else {
-                Text("Select a row to see details").foregroundStyle(.secondary).padding()
-            }
-        }
-        .padding(8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .onChange(of: viewModel.selection) { _, _ in refreshAugment() }
-        .alert(item: $killConfirm) { intent in
-            Alert(
-                title: Text(intent.signal == .kill ? "Send SIGKILL?" : "Terminate process"),
-                message: Text("PID \(intent.pid) (\(intent.label))"),
-                primaryButton: .destructive(Text(intent.signal == .kill ? "Kill -9" : "Kill")) {
-                    Task { await performKill(pid: intent.pid, signal: intent.signal, label: intent.label) }
-                },
-                secondaryButton: .cancel()
-            )
+            content
         }
     }
 
-    private var currentEntry: PortEntry? {
-        if let aug = augmented, aug.id == viewModel.selection { return aug }
-        guard let id = viewModel.selection else { return nil }
-        return viewModel.rawEntries.first { $0.id == id }
+    private func killAlert(intent: KillIntent) -> Alert {
+        let title: String = intent.signal == .kill ? "Send SIGKILL?" : "Terminate process"
+        let message: String = "PID \(intent.pid) (\(intent.label))"
+        let primaryLabel: String = intent.signal == .kill ? "Kill -9" : "Kill"
+        return Alert(
+            title: Text(title),
+            message: Text(message),
+            primaryButton: .destructive(Text(primaryLabel)) {
+                Task { await performKill(pid: intent.pid, signal: intent.signal, label: intent.label) }
+            },
+            secondaryButton: .cancel()
+        )
     }
 
-    private func detail(for e: PortEntry) -> some View {
+    @ViewBuilder
+    private var content: some View {
+        let selected = selectedEntries
+        if selected.isEmpty {
+            Text("Select a row to see details")
+                .foregroundStyle(.secondary)
+                .padding()
+        } else if selected.count == 1 {
+            singleDetail(for: selected[0])
+        } else {
+            multiDetail(for: selected)
+        }
+    }
+
+    private var selectedEntries: [PortEntry] {
+        var byId: [PortEntry.ID: PortEntry] = [:]
+        for entry in viewModel.rawEntries {
+            byId[entry.id] = entry
+        }
+        if let aug = augmented {
+            byId[aug.id] = aug
+        }
+        let picked = viewModel.selection.compactMap { byId[$0] }
+        return picked.sorted { $0.port < $1.port }
+    }
+
+    // MARK: - Single
+
+    private func singleDetail(for e: PortEntry) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text("Path:").bold()
-                Text(e.executablePath ?? (augmenting ? "loading…" : "—"))
-            }
-            HStack { Text("CWD:").bold(); Text(e.cwd ?? "—") }
-            HStack {
-                Text("User:").bold(); Text(e.user)
-                Spacer()
-                if let st = e.startTime {
-                    Text("Started: \(st.formatted(date: .abbreviated, time: .standard))")
-                }
-            }
-            HStack(spacing: 6) {
-                Button("Copy PID")  { RowActions.copyToClipboard("\(e.pid)") }
-                Button("Copy Port") { RowActions.copyToClipboard("\(e.port)") }
-                Button("Copy Path") { RowActions.copyToClipboard(e.executablePath ?? "") }
-                    .disabled(e.executablePath == nil)
-                Button("Reveal in Finder") {
-                    if let p = e.executablePath { RowActions.revealInFinder(path: p) }
-                }
-                .disabled(e.executablePath == nil)
-                pinButton(for: e)
-                Spacer()
-                Button("Kill") {
-                    killConfirm = KillIntent(pid: e.pid, label: e.processName, signal: .term)
-                }
-                .disabled(RowActions.isProtected(pid: e.pid))
-                Button("Kill -9") {
-                    killConfirm = KillIntent(pid: e.pid, label: e.processName, signal: .kill)
-                }
-                .disabled(RowActions.isProtected(pid: e.pid))
-            }
+            singleHeader(for: e)
+            singleActions(for: e)
         }
     }
 
     @ViewBuilder
+    private func singleHeader(for e: PortEntry) -> some View {
+        pathRow(for: e)
+        cwdRow(for: e)
+        userRow(for: e)
+    }
+
+    private func pathRow(for e: PortEntry) -> some View {
+        let pathText: String = e.executablePath ?? (augmenting ? "loading…" : "—")
+        return HStack {
+            Text("Path:").bold()
+            Text(pathText)
+        }
+    }
+
+    private func cwdRow(for e: PortEntry) -> some View {
+        let cwdText: String = e.cwd ?? "—"
+        return HStack {
+            Text("CWD:").bold()
+            Text(cwdText)
+        }
+    }
+
+    @ViewBuilder
+    private func userRow(for e: PortEntry) -> some View {
+        HStack {
+            Text("User:").bold()
+            Text(e.user)
+            Spacer()
+            startedLabel(for: e)
+        }
+    }
+
+    @ViewBuilder
+    private func startedLabel(for e: PortEntry) -> some View {
+        if let st = e.startTime {
+            let started: String = st.formatted(date: .abbreviated, time: .standard)
+            Text("Started: \(started)")
+        }
+    }
+
+    @ViewBuilder
+    private func singleActions(for e: PortEntry) -> some View {
+        HStack(spacing: 6) {
+            singleCopyButtons(for: e)
+            revealButton(for: e)
+            pinButton(for: e)
+            Spacer()
+            singleKillButtons(for: e)
+        }
+    }
+
+    @ViewBuilder
+    private func singleCopyButtons(for e: PortEntry) -> some View {
+        copyPidButton(for: e)
+        copyPortButton(for: e)
+        copyPathButton(for: e)
+        copyAllSingleButton(for: e)
+    }
+
+    private func copyPidButton(for e: PortEntry) -> some View {
+        let pidString: String = "\(e.pid)"
+        return Button("Copy PID") { RowActions.copyToClipboard(pidString) }
+    }
+
+    private func copyPortButton(for e: PortEntry) -> some View {
+        let portString: String = "\(e.port)"
+        return Button("Copy Port") { RowActions.copyToClipboard(portString) }
+    }
+
+    private func copyPathButton(for e: PortEntry) -> some View {
+        let path: String = e.executablePath ?? ""
+        let disabled: Bool = e.executablePath == nil
+        return Button("Copy Path") { RowActions.copyToClipboard(path) }
+            .disabled(disabled)
+    }
+
+    private func copyAllSingleButton(for e: PortEntry) -> some View {
+        Button("Copy All") {
+            let tsv = PortEntryFormatter.tsv(for: [e])
+            RowActions.copyToClipboard(tsv)
+            let msg = NSLocalizedString("Copied 1 row", comment: "")
+            toasts.showToast(msg)
+        }
+    }
+
+    private func revealButton(for e: PortEntry) -> some View {
+        let disabled: Bool = e.executablePath == nil
+        return Button("Reveal in Finder") {
+            if let p = e.executablePath { RowActions.revealInFinder(path: p) }
+        }
+        .disabled(disabled)
+    }
+
+    @ViewBuilder
+    private func singleKillButtons(for e: PortEntry) -> some View {
+        let protected: Bool = RowActions.isProtected(pid: e.pid)
+        Button("Kill") {
+            killConfirm = KillIntent(pid: e.pid, label: e.processName, signal: .term)
+        }
+        .disabled(protected)
+        Button("Kill -9") {
+            killConfirm = KillIntent(pid: e.pid, label: e.processName, signal: .kill)
+        }
+        .disabled(protected)
+    }
+
+    // MARK: - Multi
+
+    private func multiDetail(for entries: [PortEntry]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            multiHeader(for: entries)
+            multiActions(for: entries)
+        }
+    }
+
+    @ViewBuilder
+    private func multiHeader(for entries: [PortEntry]) -> some View {
+        multiCountLabel(count: entries.count)
+        multiSummary(for: entries)
+    }
+
+    private func multiCountLabel(count: Int) -> some View {
+        let label: String = "\(count) rows selected"
+        return Text(label).bold()
+    }
+
+    private func multiSummary(for entries: [PortEntry]) -> some View {
+        let summary: String = entries.prefix(20)
+            .map { "\($0.port)/\($0.proto.rawValue)" }
+            .joined(separator: ", ")
+        return ScrollView(.horizontal, showsIndicators: false) {
+            Text(summary)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+    }
+
+    @ViewBuilder
+    private func multiActions(for entries: [PortEntry]) -> some View {
+        HStack(spacing: 6) {
+            multiCopyButtons(for: entries)
+            Spacer()
+            multiBulkButtons(for: entries)
+        }
+    }
+
+    @ViewBuilder
+    private func multiCopyButtons(for entries: [PortEntry]) -> some View {
+        copyAllMultiButton(for: entries)
+        copyPortsButton(for: entries)
+        copyPidsButton(for: entries)
+    }
+
+    private func copyAllMultiButton(for entries: [PortEntry]) -> some View {
+        let count: Int = entries.count
+        return Button("Copy All (TSV)") {
+            let tsv = PortEntryFormatter.tsv(for: entries)
+            RowActions.copyToClipboard(tsv)
+            let fmt = NSLocalizedString("Copied %lld rows", comment: "")
+            let msg = String(format: fmt, count)
+            toasts.showToast(msg)
+        }
+    }
+
+    private func copyPortsButton(for entries: [PortEntry]) -> some View {
+        Button("Copy Ports") {
+            let joined = entries.map { "\($0.port)" }.joined(separator: ",")
+            RowActions.copyToClipboard(joined)
+        }
+    }
+
+    private func copyPidsButton(for entries: [PortEntry]) -> some View {
+        Button("Copy PIDs") {
+            let joined = entries.map { "\($0.pid)" }.joined(separator: ",")
+            RowActions.copyToClipboard(joined)
+        }
+    }
+
+    @ViewBuilder
+    private func multiBulkButtons(for entries: [PortEntry]) -> some View {
+        pinAllButton(for: entries)
+        killAllButton(for: entries)
+    }
+
+    private func pinAllButton(for entries: [PortEntry]) -> some View {
+        Button("Pin All to Menu Bar") {
+            for e in entries { settings.pinnedPorts.insert(e.port) }
+        }
+    }
+
+    private func killAllButton(for entries: [PortEntry]) -> some View {
+        let allProtected: Bool = entries.allSatisfy { RowActions.isProtected(pid: $0.pid) }
+        return Button("Kill All") {
+            for e in entries where !RowActions.isProtected(pid: e.pid) {
+                killConfirm = KillIntent(pid: e.pid, label: e.processName, signal: .term)
+            }
+        }
+        .disabled(allProtected)
+    }
+
+    @ViewBuilder
     private func pinButton(for e: PortEntry) -> some View {
-        let pinned = settings.pinnedPorts.contains(e.port)
+        let pinned: Bool = settings.pinnedPorts.contains(e.port)
+        let title: String = pinned ? "Unpin from Menu Bar" : "Pin to Menu Bar"
+        let icon: String = pinned ? "pin.slash" : "pin"
         Button {
             settings.togglePin(port: e.port)
         } label: {
-            Label(pinned ? "Unpin from Menu Bar" : "Pin to Menu Bar",
-                  systemImage: pinned ? "pin.slash" : "pin")
+            Label(title, systemImage: icon)
         }
     }
 
     private func refreshAugment() {
         augmented = nil
-        guard let id = viewModel.selection,
+        guard viewModel.selection.count == 1,
+              let id = viewModel.selection.first,
               let base = viewModel.rawEntries.first(where: { $0.id == id }) else { return }
         augmenting = true
         Task {
@@ -114,20 +315,22 @@ struct DetailPaneView: View {
         let msg: String
         switch outcome {
         case .terminated:
-            msg = String(localized: "Killed PID \(Int(pid)) (\(label))")
+            let fmt = NSLocalizedString("Killed PID %lld (%@)", comment: "")
+            msg = String(format: fmt, Int(pid), label)
         case .alreadyDead:
-            msg = String(localized: "Already terminated")
+            msg = NSLocalizedString("Already terminated", comment: "")
         case .noPermission:
-            msg = String(localized: "Permission denied — switch to sudo mode")
+            msg = NSLocalizedString("Permission denied — switch to sudo mode", comment: "")
         case .stillAlive:
             if signal == .term {
                 killConfirm = KillIntent(pid: pid, label: label, signal: .kill)
                 return
             } else {
-                msg = String(localized: "Not responding (Kill -9 failed)")
+                msg = NSLocalizedString("Not responding (Kill -9 failed)", comment: "")
             }
         case .launchError(let m):
-            msg = String(localized: "Error: \(m)")
+            let fmt = NSLocalizedString("Error: %@", comment: "")
+            msg = String(format: fmt, m)
         }
         toasts.showToast(msg)
         try? await viewModel.refreshOnce()
@@ -139,4 +342,32 @@ struct KillIntent: Identifiable {
     let pid: Int32
     let label: String
     let signal: KillSignal
+}
+
+/// Serializes selected PortEntries to TSV or a human-readable table.
+enum PortEntryFormatter {
+    /// Tab-separated table format — paste-friendly for spreadsheets and notes.
+    static func tsv(for entries: [PortEntry]) -> String {
+        let header = [
+            "PID", "Port", "Proto", "IP", "Process",
+            "Address", "State", "User", "Started", "Path", "CWD"
+        ].joined(separator: "\t")
+        let rows = entries.map { e in
+            [
+                "\(e.pid)",
+                "\(e.port)",
+                e.proto.rawValue,
+                e.ipFamily?.rawValue ?? "",
+                e.processName,
+                e.localAddress,
+                e.state ?? "",
+                e.user,
+                e.startTime.map { $0.formatted(date: .abbreviated, time: .standard) } ?? "",
+                e.executablePath ?? "",
+                e.cwd ?? "",
+            ].map { $0.replacingOccurrences(of: "\t", with: " ") }
+             .joined(separator: "\t")
+        }
+        return ([header] + rows).joined(separator: "\n")
+    }
 }

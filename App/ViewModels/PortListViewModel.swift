@@ -6,7 +6,7 @@ public final class PortListViewModel: ObservableObject {
     @Published public private(set) var rawEntries: [PortEntry] = []
     @Published public var sort: SortSpec = SortSpec(column: .port, dir: .asc)
     @Published public var filter: FilterState = FilterState()
-    @Published public var selection: PortEntry.ID? = nil
+    @Published public var selection: Set<PortEntry.ID> = []
     @Published public var autoRefresh: Bool = true
     @Published public var windowVisible: Bool = true
     @Published public var columnCustomization: TableColumnCustomization<PortEntry> = TableColumnCustomization<PortEntry>()
@@ -241,9 +241,14 @@ public final class PortListViewModel: ObservableObject {
     private func applyBatch(_ batch: [PortEntry]) {
         let prevSelected = selection
         rawEntries = batch
-        if let sel = prevSelected, !batch.contains(where: { $0.id == sel }) {
-            selection = nil
+        let liveIds = Set(batch.map(\.id))
+        let stillAlive = prevSelected.intersection(liveIds)
+        if !prevSelected.isEmpty, stillAlive.isEmpty {
+            selection = []
             toasts?.showToast(String(localized: "Selected process has terminated"))
+        } else if stillAlive != prevSelected {
+            // Some entries disappeared — keep only the ones still alive.
+            selection = stillAlive
         }
         // Prune cache entries whose PIDs no longer exist.
         let livePids = Set(batch.map { $0.pid })

@@ -123,19 +123,22 @@ struct MenuBarContent: View {
     // MARK: - Controls (toggles)
 
     private var controls: some View {
-        VStack(spacing: 8) {
+        HStack(spacing: 16) {
             Toggle(isOn: $viewModel.autoRefresh) {
                 Label("Auto-refresh", systemImage: "arrow.clockwise")
             }
             .toggleStyle(.switch)
+            .controlSize(.mini)
             Toggle(isOn: Binding(
                 get: { privilege.isSudoActive },
                 set: { on in
                     Task { on ? await privilege.enableSudo() : await privilege.disableSudo() }
                 })) {
-                Label("sudo mode", systemImage: "lock.shield")
+                Label("sudo", systemImage: "lock.shield")
             }
             .toggleStyle(.switch)
+            .controlSize(.mini)
+            Spacer()
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

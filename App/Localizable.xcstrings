@@ -508,6 +508,16 @@
         }
       }
     },
+    "If something went wrong, save the diagnostic log and attach it to a GitHub issue." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "문제가 있으면 진단 로그를 저장해 GitHub 이슈에 첨부해 주세요."
+          }
+        }
+      }
+    },
     "IPC channel setup failed" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -613,6 +623,16 @@
         }
       }
     },
+    "Last checked: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마지막 확인: %@"
+          }
+        }
+      }
+    },
     "Launch at Login" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -641,6 +661,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "분"
+          }
+        }
+      }
+    },
+    "New version %@ is available" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 버전 %@ 사용 가능"
+          }
+        }
+      }
+    },
+    "Not checked yet" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확인 기록 없음"
           }
         }
       }

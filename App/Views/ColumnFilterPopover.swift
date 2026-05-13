@@ -10,11 +10,11 @@ struct ColumnFilterPopover: View {
     @State private var textInput: String = ""
     @State private var useRegex: Bool = false
     @State private var selected: Set<String> = []
-    @State private var fromDate: Date = Date()
-    @State private var toDate: Date = Date()
-    @State private var preset: String = "any"
     @State private var compoundText: String = ""
     @State private var compoundSelected: Set<String> = []
+    @State private var tspec: TimeRangeSpec = TimeRangeSpec()
+    @State private var lastNText: String = ""
+    @State private var didHydrate: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -26,9 +26,10 @@ struct ColumnFilterPopover: View {
                     numberInput = ""
                     textInput = ""
                     selected = []
-                    preset = "any"
                     compoundText = ""
                     compoundSelected = []
+                    tspec = TimeRangeSpec()
+                    lastNText = ""
                 }
                 Spacer()
                 Button("Done") { isPresented = false }
@@ -41,6 +42,10 @@ struct ColumnFilterPopover: View {
     }
 
     private func hydrate() {
+        // First-load guard: hydrate only once while the popover instance is alive.
+        // Prevents overwriting user input if an external publish occurs while typing.
+        if didHydrate { return }
+        didHydrate = true
         switch viewModel.filter.byColumn[column] {
         case .number(let s):
             let parts = s.exact.map(String.init) + s.ranges.map { "\($0.lowerBound)-\($0.upperBound)" }
@@ -53,12 +58,14 @@ struct ColumnFilterPopover: View {
             selected = s
             compoundSelected = s
         case .timeRange(let from, let to):
-            if let from { fromDate = from }
-            if let to { toDate = to }
-            preset = "custom"
+            // Legacy compatibility: display as a fixed range.
+            tspec = TimeRangeSpec(mode: .customFixed, fromDate: from, toDate: to)
         case .compound(let sel, let t):
             compoundSelected = sel
             compoundText = t
+        case .timeSpec(let s):
+            tspec = s
+            if let n = s.lastN { lastNText = "\(n)" }
         case .none:
             break
         }
@@ -96,12 +103,31 @@ struct ColumnFilterPopover: View {
         }
     }
 
+    // MARK: - Shared clear button
+    @ViewBuilder
+    private func clearButton(visible: Bool, action: @escaping () -> Void) -> some View {
+        if visible {
+            Button(action: action) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.borderless)
+            .help("입력 지우기")
+        }
+    }
+
     @ViewBuilder
     private func compoundFilter(placeholder: String, options: [String], collapsible: Bool) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Filter (comma separated, partial match)").font(.caption)
-            TextField(placeholder, text: $compoundText, onCommit: applyCompound)
-                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 4) {
+                TextField(placeholder, text: $compoundText, onCommit: applyCompound)
+                    .textFieldStyle(.roundedBorder)
+                clearButton(visible: !compoundText.isEmpty) {
+                    compoundText = ""
+                    applyCompound()
+                }
+            }
             Button("Apply") { applyCompound() }
             if !options.isEmpty {
                 Divider()
@@ -146,34 +172,19 @@ struct ColumnFilterPopover: View {
         }
     }
 
-    private func tokenTextFilter(placeholder: String) -> some View {
-        VStack(alignment: .leading) {
-            Text("Filter (comma separated, partial match)").font(.caption)
-            TextField(placeholder, text: $textInput, onCommit: applyTokenText)
-                .textFieldStyle(.roundedBorder)
-            Button("Apply") { applyTokenText() }
-        }
-        .onAppear {
-            if case .text(let t, _) = viewModel.filter.byColumn[column] {
-                textInput = t
-            }
-        }
-    }
-
-    private func applyTokenText() {
-        let trimmed = textInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            viewModel.filter.byColumn.removeValue(forKey: column)
-        } else {
-            viewModel.filter.byColumn[column] = .text(trimmed, regex: false)
-        }
-    }
-
     private var numberFilter: some View {
         VStack(alignment: .leading) {
             Text("Filter (e.g. 3000, 1000-2000, 8080,9000)").font(.caption)
-            TextField("", text: $numberInput, onCommit: applyNumber)
-                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 4) {
+                TextField("3000, 1000-2000", text: $numberInput, onCommit: applyNumber)
+                    .textFieldStyle(.roundedBorder)
+                    // Apply immediately on every keystroke — works without an Apply button or onCommit.
+                    .onChange(of: numberInput) { _, _ in applyNumber() }
+                clearButton(visible: !numberInput.isEmpty) {
+                    numberInput = ""
+                    applyNumber()
+                }
+            }
             Button("Apply") { applyNumber() }
         }
     }
@@ -189,8 +200,14 @@ struct ColumnFilterPopover: View {
 
     private var textFilter: some View {
         VStack(alignment: .leading) {
-            TextField("Text or regex", text: $textInput, onCommit: applyText)
-                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 4) {
+                TextField("Text or regex", text: $textInput, onCommit: applyText)
+                    .textFieldStyle(.roundedBorder)
+                clearButton(visible: !textInput.isEmpty) {
+                    textInput = ""
+                    applyText()
+                }
+            }
             Toggle("Regex", isOn: $useRegex)
             Button("Apply") { applyText() }
         }
@@ -199,12 +216,18 @@ struct ColumnFilterPopover: View {
     private var addressTextFilter: some View {
         VStack(alignment: .leading) {
             Text("Filter (IP/CIDR, comma separated)").font(.caption)
-            TextField(
-                "e.g. 127.0.0.1, 192.168.1.0/24, ::1",
-                text: $textInput,
-                onCommit: applyAddressText
-            )
-            .textFieldStyle(.roundedBorder)
+            HStack(spacing: 4) {
+                TextField(
+                    "e.g. 127.0.0.1, 192.168.1.0/24, ::1",
+                    text: $textInput,
+                    onCommit: applyAddressText
+                )
+                .textFieldStyle(.roundedBorder)
+                clearButton(visible: !textInput.isEmpty) {
+                    textInput = ""
+                    applyAddressText()
+                }
+            }
             Button("Apply") { applyAddressText() }
         }
     }
@@ -225,56 +248,52 @@ struct ColumnFilterPopover: View {
         }
     }
 
-    private func multiSelectFilter(options: [String]) -> some View {
-        VStack(alignment: .leading) {
-            ForEach(options, id: \.self) { opt in
-                Toggle(opt, isOn: Binding(
-                    get: { selected.contains(opt) },
-                    set: { on in
-                        if on { selected.insert(opt) } else { selected.remove(opt) }
-                        if selected.isEmpty {
-                            viewModel.filter.byColumn.removeValue(forKey: column)
-                        } else {
-                            viewModel.filter.byColumn[column] = .multiSelect(selected)
-                        }
-                    }
-                ))
-            }
-        }
-    }
-
     private var timeRangeFilter: some View {
         VStack(alignment: .leading) {
-            Picker("Preset", selection: $preset) {
-                Text("Any").tag("any")
-                Text("Last 5 min").tag("5m")
-                Text("Last 1 hour").tag("1h")
-                Text("Today").tag("today")
-                Text("Custom").tag("custom")
+            Picker("Preset", selection: $tspec.mode) {
+                Text("Any").tag(TimeRangeSpec.Mode.any)
+                Text("Last 5 min").tag(TimeRangeSpec.Mode.last5m)
+                Text("Last 1 hour").tag(TimeRangeSpec.Mode.last1h)
+                Text("Today").tag(TimeRangeSpec.Mode.today)
+                Text("Custom (Fixed)").tag(TimeRangeSpec.Mode.customFixed)
+                Text("Custom (Last)").tag(TimeRangeSpec.Mode.customLast)
             }
-            if preset == "custom" {
-                DatePicker("From", selection: $fromDate)
-                DatePicker("To", selection: $toDate)
+            if tspec.mode == .customFixed {
+                DatePicker("From", selection: Binding(
+                    get: { tspec.fromDate ?? Date() },
+                    set: { tspec.fromDate = $0 }))
+                DatePicker("To", selection: Binding(
+                    get: { tspec.toDate ?? Date() },
+                    set: { tspec.toDate = $0 }))
             }
-            Button("Apply") { applyTime() }
+            if tspec.mode == .customLast {
+                HStack {
+                    Text("Last")
+                    TextField("N", text: $lastNText)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 60)
+                    Picker("", selection: Binding(
+                        get: { tspec.lastUnit ?? "min" },
+                        set: { tspec.lastUnit = $0 })) {
+                        Text("min").tag("min")
+                        Text("hour").tag("hour")
+                        Text("day").tag("day")
+                    }
+                    .frame(width: 90)
+                }
+            }
+            Button("Apply") { applyTimeSpec() }
         }
     }
 
-    private func applyTime() {
-        switch preset {
-        case "any":
+    private func applyTimeSpec() {
+        if tspec.mode == .customLast {
+            tspec.lastN = Int(lastNText.trimmingCharacters(in: .whitespaces))
+        }
+        if tspec.isEmpty || tspec.mode == .any {
             viewModel.filter.byColumn.removeValue(forKey: column)
-        case "5m":
-            viewModel.filter.byColumn[column] = .timeRange(Date().addingTimeInterval(-300), nil)
-        case "1h":
-            viewModel.filter.byColumn[column] = .timeRange(Date().addingTimeInterval(-3600), nil)
-        case "today":
-            let start = Calendar.current.startOfDay(for: Date())
-            viewModel.filter.byColumn[column] = .timeRange(start, nil)
-        case "custom":
-            viewModel.filter.byColumn[column] = .timeRange(fromDate, toDate)
-        default:
-            break
+        } else {
+            viewModel.filter.byColumn[column] = .timeSpec(tspec)
         }
     }
 }

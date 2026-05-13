@@ -25,6 +25,15 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    /// App language setting: "system" / "en" / "ko". Changes take effect on the next launch.
+    @Published public var appLanguage: String {
+        didSet {
+            guard oldValue != appLanguage else { return }
+            UserDefaults.standard.set(appLanguage, forKey: Self.appLanguageKey)
+            applyAppLanguage(appLanguage)
+        }
+    }
+
     public init() {
         if UserDefaults.standard.object(forKey: Self.showMenuBarKey) == nil {
             self.showMenuBar = true
@@ -40,6 +49,16 @@ public final class AppSettings: ObservableObject {
         // launchAtLogin starts as false; system state is synchronized asynchronously in syncFromSystem().
         // SMAppService.status may block or hang in some environments (e.g. test hosts).
         self.launchAtLogin = false
+        // If a saved language preference exists, also apply it to AppleLanguages (effective on next launch).
+        applyAppLanguage(appLanguage)
+    }
+
+    private func applyAppLanguage(_ lang: String) {
+        if lang == "system" {
+            UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+        } else {
+            UserDefaults.standard.set([lang], forKey: "AppleLanguages")
+        }
     }
 
     /// Reads the SMAppService status from the system and synchronizes it with launchAtLogin.

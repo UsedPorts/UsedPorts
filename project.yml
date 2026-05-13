@@ -4,6 +4,7 @@ options:
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
+  developmentLanguage: en
 settings:
   base:
     SWIFT_VERSION: "5.9"
@@ -34,6 +35,8 @@ targets:
         LSApplicationCategoryType: public.app-category.developer-tools
         LSMinimumSystemVersion: "14.0"
         LSUIElement: NO
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, ko]
     entitlements:
       path: App/UsedPorts.entitlements
       properties: {}

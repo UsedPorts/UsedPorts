@@ -6,12 +6,22 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("General") {
-                Toggle("로그인 시 자동 시작", isOn: $settings.launchAtLogin)
-                Toggle("메뉴바에 표시", isOn: $settings.showMenuBar)
+                Toggle("Launch at Login", isOn: $settings.launchAtLogin)
+                Toggle("Show in Menu Bar", isOn: $settings.showMenuBar)
+            }
+            Section("Language") {
+                Picker("Language", selection: $settings.appLanguage) {
+                    Text("System").tag("system")
+                    Text("English").tag("en")
+                    Text("한국어").tag("ko")
+                }
+                Text("Restart the app to apply.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 200)
+        .frame(width: 460, height: 280)
         .padding()
         .onAppear { settings.syncFromSystem() }
     }

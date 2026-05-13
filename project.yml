@@ -67,6 +67,8 @@ targets:
     platform: macOS
     sources:
       - path: Tests
+    resources:
+      - path: Tests/UnitTests/Fixtures
     dependencies:
       - target: UsedPorts
     settings:

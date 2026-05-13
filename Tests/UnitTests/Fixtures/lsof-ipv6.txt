@@ -1,0 +1,7 @@
+p1001
+cChrome
+uname
+f30
+PTCP
+n[::1]:8443
+TST=LISTEN

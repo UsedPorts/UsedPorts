@@ -5,6 +5,7 @@ struct MenuBarContent: View {
     @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var privilege: PrivilegeManager
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         let top = viewModel.visibleEntries.prefix(8)
@@ -31,6 +32,8 @@ struct MenuBarContent: View {
                     Task { on ? await privilege.enableSudo() : await privilege.disableSudo() }
                 }))
             Divider()
+            Button("Settings…") { openSettings() }
+                .keyboardShortcut(",")
             Button("Quit") { NSApp.terminate(nil) }
                 .keyboardShortcut("q")
         }

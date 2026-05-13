@@ -6,6 +6,7 @@ struct UsedPortsApp: App {
     @StateObject private var vm: PortListViewModel
     @StateObject private var priv: PrivilegeManager
     @StateObject private var toasts: ToastCenter
+    @StateObject private var settings: AppSettings
 
     init() {
         let s = PortScanner()
@@ -14,6 +15,7 @@ struct UsedPortsApp: App {
         _toasts = StateObject(wrappedValue: t)
         _vm = StateObject(wrappedValue: PortListViewModel(scanner: s, toasts: t))
         _priv = StateObject(wrappedValue: PrivilegeManager(scanner: s, toasts: t))
+        _settings = StateObject(wrappedValue: AppSettings())
     }
 
     var body: some Scene {
@@ -26,5 +28,9 @@ struct UsedPortsApp: App {
             MenuBarContent(viewModel: vm, privilege: priv)
         }
         .menuBarExtraStyle(.window)
+
+        Settings {
+            SettingsView(settings: settings)
+        }
     }
 }

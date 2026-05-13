@@ -44,7 +44,8 @@ public struct LsofParser {
                 curCommand = ""; curUser = ""
                 curFd = ""; curProto = nil; curName = ""; curState = nil
             case "c": curCommand = rest
-            case "u": curUser = rest
+            case "L": curUser = rest
+            case "u": continue // UID — ignored; prefer "L" login name
             case "f":
                 flushFd()
                 curFd = rest

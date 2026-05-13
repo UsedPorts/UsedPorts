@@ -1,13 +1,15 @@
 p318
 cpostgres
-u_postgres
+u72
+L_postgres
 f12
 PTCP
 n*:5432
 TST=LISTEN
 p4821
 cnode
-uname
+u501
+Lname
 f23
 PTCP
 n127.0.0.1:3000
@@ -18,7 +20,8 @@ n127.0.0.1:3000->127.0.0.1:54321
 TST=ESTABLISHED
 p999
 cmDNSResponder
-u_mdnsresponder
+u65
+L_mdnsresponder
 f5
 PUDP
 n*:5353

@@ -1,6 +1,7 @@
 p1001
 cChrome
-uname
+u501
+Lname
 f30
 PTCP
 n[::1]:8443

@@ -1,0 +1,87 @@
+name: UsedPorts
+options:
+  minimumXcodeGenVersion: "2.38.0"
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "-"
+    ENABLE_HARDENED_RUNTIME: YES
+    ENABLE_APP_SANDBOX: NO
+targets:
+  UsedPorts:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+      - path: Shared
+    resources:
+      - path: Tests/UnitTests/Fixtures
+        optional: true
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleName: UsedPorts
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSApplicationCategoryType: public.app-category.developer-tools
+        LSMinimumSystemVersion: "14.0"
+        LSUIElement: NO
+    entitlements:
+      path: App/UsedPorts.entitlements
+      properties: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.usedports.UsedPorts
+        GENERATE_INFOPLIST_FILE: NO
+    dependencies:
+      - target: uph
+        embed: false
+        link: false
+    postBuildScripts:
+      - name: "Copy uph helper into Resources"
+        script: |
+          set -e
+          mkdir -p "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
+          cp -f "${BUILT_PRODUCTS_DIR}/uph" "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/uph"
+        outputFiles:
+          - "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/uph"
+
+  uph:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Helper/uph
+      - path: Shared
+      - path: App/Infrastructure
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.usedports.uph
+
+  UsedPortsTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: UsedPorts
+    settings:
+      base:
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/UsedPorts.app/Contents/MacOS/UsedPorts"
+schemes:
+  UsedPorts:
+    build:
+      targets:
+        UsedPorts: all
+        uph: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - UsedPortsTests

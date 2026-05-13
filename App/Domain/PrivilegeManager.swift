@@ -8,14 +8,17 @@ public final class PrivilegeManager: ObservableObject {
 
     private let helper = ElevatedHelper()
     private let scanner: PortScanner
+    private let toasts: ToastCenter?
 
-    public init(scanner: PortScanner) {
+    public init(scanner: PortScanner, toasts: ToastCenter? = nil) {
         self.scanner = scanner
+        self.toasts = toasts
     }
 
     public func enableSudo() async {
         guard let path = Bundle.main.url(forResource: "uph", withExtension: nil)?.path else {
             lastError = "uph 바이너리를 찾을 수 없습니다"
+            toasts?.showBanner(lastError)
             return
         }
         do {
@@ -31,12 +34,15 @@ public final class PrivilegeManager: ObservableObject {
             }
             isSudoActive = true
             lastError = nil
+            toasts?.showBanner(nil)
         } catch HelperError.userCancelled {
             lastError = "권한 부여가 취소되었습니다"
             isSudoActive = false
+            toasts?.showBanner(lastError)
         } catch {
             lastError = "헬퍼 시작 실패: \(error)"
             isSudoActive = false
+            toasts?.showBanner(lastError)
         }
     }
 
@@ -44,6 +50,7 @@ public final class PrivilegeManager: ObservableObject {
         await scanner.setElevatedScanner(nil)
         await helper.stop()
         isSudoActive = false
+        toasts?.showBanner(nil)
     }
 
     /// Kill via the helper (called only in sudo mode). Converts the result to KillOutcome.

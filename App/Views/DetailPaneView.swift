@@ -4,9 +4,9 @@ import SwiftUI
 struct DetailPaneView: View {
     @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var privilege: PrivilegeManager
+    @ObservedObject var toasts: ToastCenter
     @State private var augmented: PortEntry? = nil
     @State private var augmenting = false
-    @State private var toast: String? = nil
     @State private var killConfirm: KillIntent? = nil
 
     private let augmenter = ProcessAugmenter()
@@ -18,9 +18,6 @@ struct DetailPaneView: View {
                 detail(for: entry)
             } else {
                 Text("Select a row to see details").foregroundStyle(.secondary).padding()
-            }
-            if let toast {
-                Text(toast).padding(6).background(.thinMaterial).cornerRadius(6)
             }
         }
         .padding(8)
@@ -113,10 +110,8 @@ struct DetailPaneView: View {
             } else { msg = "응답하지 않음 (Kill -9 실패)" }
         case .launchError(let m): msg = "오류: \(m)"
         }
-        toast = msg
+        toasts.showToast(msg)
         try? await viewModel.refreshOnce()
-        try? await Task.sleep(nanoseconds: 2_500_000_000)
-        toast = nil
     }
 }
 

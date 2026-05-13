@@ -3,17 +3,20 @@ import SwiftUI
 struct PortListView: View {
     @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var privilege: PrivilegeManager
+    @ObservedObject var toasts: ToastCenter
 
     var body: some View {
-        VStack(spacing: 0) {
-            toolbar
-            Divider()
-            PortListTable(viewModel: viewModel)
-            Divider()
-            DetailPaneView(viewModel: viewModel, privilege: privilege)
+        ToastHost(center: toasts) {
+            VStack(spacing: 0) {
+                toolbar
+                Divider()
+                PortListTable(viewModel: viewModel)
+                Divider()
+                DetailPaneView(viewModel: viewModel, privilege: privilege, toasts: toasts)
+            }
+            .task { viewModel.startStream() }
+            .onDisappear { Task { await viewModel.stopStream() } }
         }
-        .task { viewModel.startStream() }
-        .onDisappear { Task { await viewModel.stopStream() } }
     }
 
     private var toolbar: some View {

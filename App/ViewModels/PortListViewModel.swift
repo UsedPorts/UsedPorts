@@ -231,7 +231,7 @@ public final class PortListViewModel: ObservableObject {
         rawEntries = batch
         if let sel = prevSelected, !batch.contains(where: { $0.id == sel }) {
             selection = nil
-            toasts?.showToast("선택했던 프로세스가 종료되었습니다")
+            toasts?.showToast(String(localized: "Selected process has terminated"))
         }
         // Prune cache entries whose PIDs no longer exist.
         let livePids = Set(batch.map { $0.pid })

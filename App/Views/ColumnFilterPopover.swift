@@ -120,7 +120,7 @@ struct ColumnFilterPopover: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.borderless)
-            .help("입력 지우기")
+            .help("Clear input")
         }
     }
 
@@ -140,7 +140,7 @@ struct ColumnFilterPopover: View {
             if !options.isEmpty {
                 Divider()
                 if collapsible {
-                    DisclosureGroup("발견된 값 (\(options.count))") {
+                    DisclosureGroup(String(localized: "Discovered values (\(options.count))")) {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 2) {
                                 ForEach(options, id: \.self) { opt in

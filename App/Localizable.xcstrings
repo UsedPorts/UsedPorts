@@ -1,371 +1,1133 @@
 {
   "sourceLanguage" : "en",
-  "version" : "1.0",
   "strings" : {
-    "%lld ports" : {
+    "—" : {
+
+    },
+    "(inactive)" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "%lld 포트" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(비활성)"
+          }
+        }
       }
     },
     "(no ports)" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "(포트 없음)" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(포트 없음)"
+          }
+        }
       }
     },
-    "Apply" : {
+    "%@" : {
+
+    },
+    "%@ / %@" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "적용" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ / %2$@"
+          }
+        }
+      }
+    },
+    "%@ %@ — %@ (pid %@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ — %3$@ (pid %4$@)"
+          }
+        }
+      }
+    },
+    "%@ ports" : {
+
+    },
+    "%lld ports" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 포트"
+          }
+        }
+      }
+    },
+    "3000  ·  1000~2000  ·  5000+  ·  ~80" : {
+
+    },
+    "Already terminated" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이미 종료된 프로세스"
+          }
+        }
+      }
+    },
+    "Any" : {
+
+    },
+    "Apply" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "적용"
+          }
+        }
+      }
+    },
+    "Authorization cancelled" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "권한 부여가 취소되었습니다"
+          }
+        }
       }
     },
     "Auto" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "자동" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자동"
+          }
+        }
+      }
+    },
+    "Automatically check for updates" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "업데이트 자동 확인"
+          }
+        }
       }
     },
     "Auto-refresh" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "자동 새로고침" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자동 새로고침"
+          }
+        }
       }
     },
     "Cancel" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "취소" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "취소"
+          }
+        }
+      }
+    },
+    "Check Now" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지금 확인"
+          }
+        }
       }
     },
     "Check now" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "지금 확인" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지금 확인"
+          }
+        }
       }
     },
     "Clear all" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "모두 지우기" } }
-      }
-    },
-    "Clear filter" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "필터 지우기" } }
-      }
-    },
-    "Clear search" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "검색어 지우기" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 지우기"
+          }
+        }
       }
     },
     "Clear all filters" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "모든 필터 초기화" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 필터 초기화"
+          }
+        }
+      }
+    },
+    "Clear filter" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 지우기"
+          }
+        }
       }
     },
     "Clear input" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "입력 지우기" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "입력 지우기"
+          }
+        }
       }
     },
-    "Copy PID" : {
+    "Clear search" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "PID 복사" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "검색어 지우기"
+          }
+        }
+      }
+    },
+    "Copied 1 row" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1개 행 복사됨"
+          }
+        }
+      }
+    },
+    "Copied %lld rows" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld개 행 복사됨"
+          }
+        }
+      }
+    },
+    "Copy All" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전체 복사"
+          }
+        }
+      }
+    },
+    "Copy All (TSV)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전체 복사 (TSV)"
+          }
+        }
       }
     },
     "Copy Path" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "경로 복사" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "경로 복사"
+          }
+        }
+      }
+    },
+    "Copy PID" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PID 복사"
+          }
+        }
+      }
+    },
+    "Copy PIDs" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PID 복사"
+          }
+        }
       }
     },
     "Copy Port" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "포트 복사" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트 복사"
+          }
+        }
       }
     },
-    "CWD:" : {
+    "Copy Ports" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "작업 디렉터리:" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트 복사"
+          }
+        }
       }
     },
     "Custom (Fixed)" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "사용자 지정 (고정)" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용자 지정 (고정)"
+          }
+        }
       }
     },
     "Custom (Last)" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "사용자 지정 (최근)" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용자 지정 (최근)"
+          }
+        }
+      }
+    },
+    "CWD:" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업 디렉터리:"
+          }
+        }
       }
     },
     "day" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "일" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일"
+          }
+        }
       }
     },
     "Discovered values (%lld)" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "발견된 값 (%lld)" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "발견된 값 (%lld)"
+          }
+        }
       }
     },
     "Done" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "완료" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "완료"
+          }
+        }
       }
     },
     "English" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "English" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "English"
+          }
+        }
+      }
+    },
+    "Error: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "오류: %@"
+          }
+        }
       }
     },
     "Filter (comma separated, partial match)" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "필터 (쉼표 구분, 부분 일치)" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 (쉼표 구분, 부분 일치)"
+          }
+        }
       }
     },
     "Filter (IP/CIDR, comma separated)" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "필터 (IP/CIDR, 쉼표 구분)" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 (IP/CIDR, 쉼표 구분)"
+          }
+        }
+      }
+    },
+    "Filter: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터: %@"
+          }
+        }
+      }
+    },
+    "Filter: %@ (active)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터: %@ (활성)"
+          }
+        }
       }
     },
     "Filter active" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "필터 활성" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 활성"
+          }
+        }
       }
     },
     "From" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "시작" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시작"
+          }
+        }
       }
     },
     "General" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "일반" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일반"
+          }
+        }
+      }
+    },
+    "Help" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도움말"
+          }
+        }
+      }
+    },
+    "Helper failed to start" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "헬퍼 시작 실패"
+          }
+        }
+      }
+    },
+    "Helper failed to start: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "헬퍼 시작 실패: %@"
+          }
+        }
       }
     },
     "hour" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "시간" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시간"
+          }
+        }
+      }
+    },
+    "IPC channel setup failed" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPC 채널 설정 실패"
+          }
+        }
+      }
+    },
+    "IPC channel setup failed: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPC 채널 설정 실패: %@"
+          }
+        }
       }
     },
     "Kill" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "종료" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "종료"
+          }
+        }
       }
     },
     "Kill -9" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "강제 종료 (Kill -9)" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "강제 종료 (Kill -9)"
+          }
+        }
+      }
+    },
+    "Kill All" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 종료"
+          }
+        }
+      }
+    },
+    "Killed PID %lld (%@)" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PID %lld (%@) 종료됨"
+          }
+        }
       }
     },
     "Language" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "언어" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "언어"
+          }
+        }
       }
     },
     "Last" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "최근" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "최근"
+          }
+        }
       }
     },
     "Last 1 hour" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "최근 1시간" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "최근 1시간"
+          }
+        }
       }
     },
     "Last 5 min" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "최근 5분" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "최근 5분"
+          }
+        }
       }
     },
     "Launch at Login" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "로그인 시 자동 시작" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인 시 자동 시작"
+          }
+        }
       }
     },
     "loading…" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "로딩 중…" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로딩 중…"
+          }
+        }
       }
     },
     "min" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "분" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "분"
+          }
+        }
+      }
+    },
+    "Not responding (Kill -9 failed)" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "응답하지 않음 (Kill -9 실패)"
+          }
+        }
       }
     },
     "Path:" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "경로:" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "경로:"
+          }
+        }
+      }
+    },
+    "Permission denied — switch to sudo mode" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "권한 부족 — sudo 모드 전환이 필요합니다"
+          }
+        }
+      }
+    },
+    "PID %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "PID %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "Pin All to Menu Bar" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메뉴바에 모두 고정"
+          }
+        }
+      }
+    },
+    "Pin to Menu Bar" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메뉴바에 고정"
+          }
+        }
+      }
+    },
+    "Pin to menu bar" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메뉴바에 고정"
+          }
+        }
+      }
+    },
+    "Pinned" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "고정됨"
+          }
+        }
       }
     },
     "Preset" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "프리셋" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프리셋"
+          }
+        }
       }
     },
     "Quit" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "종료" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "종료"
+          }
+        }
+      }
+    },
+    "Recent" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "최근"
+          }
+        }
       }
     },
     "Refresh" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "새로고침" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새로고침"
+          }
+        }
       }
     },
     "Refresh (⌘R)" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "새로고침 (⌘R)" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새로고침 (⌘R)"
+          }
+        }
       }
     },
     "Regex" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "정규식" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "정규식"
+          }
+        }
+      }
+    },
+    "Report Issue on GitHub…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub에 이슈 등록…"
+          }
+        }
+      }
+    },
+    "Reporting opens a pre-filled GitHub issue and copies the log to your clipboard so you can paste it." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리포트를 시작하면 미리 작성된 GitHub 이슈가 열리고 로그가 클립보드에 복사됩니다. 본문에 붙여넣기 해주세요."
+          }
+        }
       }
     },
     "Restart the app to apply." : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "앱을 재시작하면 적용됩니다." } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "앱을 재시작하면 적용됩니다."
+          }
+        }
       }
     },
     "Reveal in Finder" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Finder에서 보기" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finder에서 보기"
+          }
+        }
+      }
+    },
+    "%lld rows selected" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld개 행 선택됨"
+          }
+        }
+      }
+    },
+    "Save Diagnostic Log…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "진단 로그 저장…"
+          }
+        }
       }
     },
     "Search PID, port, process…" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "PID, 포트, 프로세스 검색…" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PID, 포트, 프로세스 검색…"
+          }
+        }
       }
     },
     "Select a row to see details" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "상세 정보를 보려면 행을 선택하세요" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "상세 정보를 보려면 행을 선택하세요"
+          }
+        }
+      }
+    },
+    "Selected process has terminated" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선택했던 프로세스가 종료되었습니다"
+          }
+        }
+      }
+    },
+    "Send SIGKILL?" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SIGKILL을 보내시겠습니까?"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정"
+          }
+        }
       }
     },
     "Settings…" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "설정…" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정…"
+          }
+        }
       }
     },
-    "Show in Menu Bar" : {
+    "Show All Ports" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "메뉴바에 표시" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 포트 보기"
+          }
+        }
       }
     },
     "Show All Ports…" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "모든 포트 보기…" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 포트 보기…"
+          }
+        }
+      }
+    },
+    "Show in Menu Bar" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메뉴바에 표시"
+          }
+        }
       }
     },
     "Showing / Total" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "표시 / 전체" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "표시 / 전체"
+          }
+        }
       }
     },
     "Sort" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "정렬" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "정렬"
+          }
+        }
       }
     },
     "Started: %@" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "시작: %@" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시작: %@"
+          }
+        }
       }
     },
     "sudo" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "sudo" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sudo"
+          }
+        }
       }
     },
     "sudo mode" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "sudo 모드" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sudo 모드"
+          }
+        }
       }
     },
     "System" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "시스템 설정" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시스템 설정"
+          }
+        }
+      }
+    },
+    "Terminate process" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프로세스 종료"
+          }
+        }
       }
     },
     "Text or regex" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "텍스트 또는 정규식" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "텍스트 또는 정규식"
+          }
+        }
       }
     },
     "To" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "끝" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "끝"
+          }
+        }
       }
     },
     "Today" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "오늘" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "오늘"
+          }
+        }
+      }
+    },
+    "Unpin from Menu Bar" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메뉴바 고정 해제"
+          }
+        }
+      }
+    },
+    "Unpin from menu bar" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메뉴바 고정 해제"
+          }
+        }
       }
     },
     "Updates" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "업데이트" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "업데이트"
+          }
+        }
+      }
+    },
+    "uph helper binary not found" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "uph 바이너리를 찾을 수 없습니다"
+          }
+        }
       }
     },
     "User:" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "사용자:" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용자:"
+          }
+        }
+      }
+    },
+    "View Release" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "릴리스 보기"
+          }
+        }
       }
     },
     "한국어" : {
       "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "한국어" } }
-      }
-    },
-    "Already terminated" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "이미 종료된 프로세스" } }
-      }
-    },
-    "Permission denied — switch to sudo mode" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "권한 부족 — sudo 모드 전환이 필요합니다" } }
-      }
-    },
-    "Not responding (Kill -9 failed)" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "응답하지 않음 (Kill -9 실패)" } }
-      }
-    },
-    "Send SIGKILL?" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "SIGKILL을 보내시겠습니까?" } }
-      }
-    },
-    "Terminate process" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "프로세스 종료" } }
-      }
-    },
-    "Authorization cancelled" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "권한 부여가 취소되었습니다" } }
-      }
-    },
-    "Helper failed to start" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "헬퍼 시작 실패" } }
-      }
-    },
-    "uph helper binary not found" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "uph 바이너리를 찾을 수 없습니다" } }
-      }
-    },
-    "IPC channel setup failed" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "IPC 채널 설정 실패" } }
-      }
-    },
-    "Selected process has terminated" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "선택했던 프로세스가 종료되었습니다" } }
-      }
-    },
-    "Killed PID %lld (%@)" : {
-      "localizations" : {
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "PID %lld (%@) 종료됨" } }
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "한국어"
+          }
+        }
       }
     }
-  }
+  },
+  "version" : "1.0"
 }

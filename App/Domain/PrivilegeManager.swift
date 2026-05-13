@@ -17,7 +17,7 @@ public final class PrivilegeManager: ObservableObject {
 
     public func enableSudo() async {
         guard let path = Bundle.main.url(forResource: "uph", withExtension: nil)?.path else {
-            lastError = "uph 바이너리를 찾을 수 없습니다"
+            lastError = String(localized: "uph helper binary not found")
             toasts?.showBanner(lastError)
             return
         }
@@ -36,15 +36,15 @@ public final class PrivilegeManager: ObservableObject {
             lastError = nil
             toasts?.showBanner(nil)
         } catch HelperError.userCancelled {
-            lastError = "권한 부여가 취소되었습니다"
+            lastError = String(localized: "Authorization cancelled")
             isSudoActive = false
             toasts?.showBanner(lastError)
         } catch HelperError.fifoFailed(let m) {
-            lastError = "IPC 채널 설정 실패: \(m)"
+            lastError = String(localized: "IPC channel setup failed: \(m)")
             isSudoActive = false
             toasts?.showBanner(lastError)
         } catch {
-            lastError = "헬퍼 시작 실패: \(error)"
+            lastError = String(localized: "Helper failed to start: \(String(describing: error))")
             isSudoActive = false
             toasts?.showBanner(lastError)
         }

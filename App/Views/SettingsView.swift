@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
+    @ObservedObject var updater: UpdateChecker
 
     var body: some View {
         Form {
@@ -19,9 +20,35 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Section("Updates") {
+                Toggle("Automatically check for updates", isOn: $updater.autoCheckEnabled)
+                HStack {
+                    Button("Check Now") {
+                        Task { await updater.checkNow() }
+                    }
+                    .disabled(updater.isChecking)
+                    Spacer()
+                    if let last = updater.lastCheckDate {
+                        Text("Last checked: \(last.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Not checked yet")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if updater.isNewAvailable, let v = updater.latestVersion {
+                    HStack {
+                        Text("New version \(v) is available")
+                        Spacer()
+                        Button("View Release") { updater.openReleasePage() }
+                    }
+                }
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 280)
+        .frame(width: 480, height: 380)
         .padding()
         .onAppear { settings.syncFromSystem() }
     }

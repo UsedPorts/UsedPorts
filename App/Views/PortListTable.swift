@@ -100,7 +100,9 @@ struct PortListTable: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                     .buttonStyle(.plain)
-                    .help("필터: \(label(col))\(isActive ? " (활성)" : "")")
+                    .help(isActive
+                          ? String(localized: "Filter: \(label(col)) (active)")
+                          : String(localized: "Filter: \(label(col))"))
                     .popover(isPresented: Binding(
                         get: { openColumn == col },
                         set: { if !$0 { openColumn = nil } }

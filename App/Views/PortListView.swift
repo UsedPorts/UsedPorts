@@ -38,7 +38,7 @@ struct PortListView: View {
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.borderless)
-                    .help("검색어 지우기")
+                    .help("Clear search")
                 }
             }
             .padding(.horizontal, 8)
@@ -49,12 +49,12 @@ struct PortListView: View {
             Text("\(viewModel.visibleEntries.count) / \(viewModel.rawEntries.count)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .help("표시 중 / 전체 항목 수")
+                .help("Showing / Total")
             Button("Clear all") {
                 viewModel.filter = FilterState()
             }
             .disabled(viewModel.filter.byColumn.isEmpty && viewModel.filter.globalSearch.isEmpty)
-            .help("모든 필터 초기화")
+            .help("Clear all filters")
             Spacer()
             Toggle("Auto", isOn: $viewModel.autoRefresh)
                 .toggleStyle(.switch)
@@ -73,7 +73,7 @@ struct PortListView: View {
             Button {
                 Task { try? await viewModel.refreshOnce() }
             } label: { Image(systemName: "arrow.clockwise") }
-                .help("새로고침 (⌘R)")
+                .help("Refresh (⌘R)")
                 .keyboardShortcut("r", modifiers: .command)
         }
         .padding(8)

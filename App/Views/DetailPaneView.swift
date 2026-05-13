@@ -25,7 +25,7 @@ struct DetailPaneView: View {
         .onChange(of: viewModel.selection) { _, _ in refreshAugment() }
         .alert(item: $killConfirm) { intent in
             Alert(
-                title: Text(intent.signal == .kill ? "SIGKILL 보내시겠습니까?" : "프로세스 종료"),
+                title: Text(intent.signal == .kill ? "Send SIGKILL?" : "Terminate process"),
                 message: Text("PID \(intent.pid) (\(intent.label))"),
                 primaryButton: .destructive(Text(intent.signal == .kill ? "Kill -9" : "Kill")) {
                     Task { await performKill(pid: intent.pid, signal: intent.signal, label: intent.label) }
@@ -100,15 +100,21 @@ struct DetailPaneView: View {
         }
         let msg: String
         switch outcome {
-        case .terminated:   msg = "✓ Killed PID \(pid) (\(label))"
-        case .alreadyDead:  msg = "이미 종료된 프로세스"
-        case .noPermission: msg = "권한 부족 — sudo 모드 전환이 필요합니다"
+        case .terminated:
+            msg = String(localized: "Killed PID \(Int(pid)) (\(label))")
+        case .alreadyDead:
+            msg = String(localized: "Already terminated")
+        case .noPermission:
+            msg = String(localized: "Permission denied — switch to sudo mode")
         case .stillAlive:
             if signal == .term {
                 killConfirm = KillIntent(pid: pid, label: label, signal: .kill)
                 return
-            } else { msg = "응답하지 않음 (Kill -9 실패)" }
-        case .launchError(let m): msg = "오류: \(m)"
+            } else {
+                msg = String(localized: "Not responding (Kill -9 failed)")
+            }
+        case .launchError(let m):
+            msg = String(localized: "Error: \(m)")
         }
         toasts.showToast(msg)
         try? await viewModel.refreshOnce()

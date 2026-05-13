@@ -12,6 +12,7 @@ final class AppHostStore: ObservableObject {
     let privilege: PrivilegeManager
     let settings: AppSettings
     let toasts: ToastCenter
+    let updater: UpdateChecker
 
     init() {
         let scanner = PortScanner()
@@ -19,11 +20,13 @@ final class AppHostStore: ObservableObject {
         let viewModel = PortListViewModel(scanner: scanner, toasts: toasts)
         let privilege = PrivilegeManager(scanner: scanner, toasts: toasts)
         let settings = AppSettings()
+        let updater = UpdateChecker()
         self.scanner = scanner
         self.viewModel = viewModel
         self.privilege = privilege
         self.settings = settings
         self.toasts = toasts
+        self.updater = updater
     }
 }
 
@@ -60,6 +63,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     func applicationDidFinishLaunching(_ notification: Notification) {
         installStatusItem()
         observeVisibility()
+        observeUpdateChecker()
+        Task { [host] in
+            // Auto-check on launch (noop if disabled). Results are surfaced via host.toasts.
+            if host.updater.autoCheckEnabled {
+                await host.updater.checkNow()
+            }
+        }
+    }
+
+    private func observeUpdateChecker() {
+        // Show a toast banner when a new version is found.
+        Task { [host] in
+            for await _ in host.updater.$isNewAvailable.values where host.updater.isNewAvailable {
+                let v = host.updater.latestVersion ?? "?"
+                host.toasts.showBanner(String(localized: "New version \(v) is available"))
+            }
+        }
     }
 
     // MARK: - Setup

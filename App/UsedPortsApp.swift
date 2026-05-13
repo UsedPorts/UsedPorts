@@ -17,9 +17,14 @@ struct UsedPortsApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("UsedPorts") {
+        WindowGroup("UsedPorts", id: "main") {
             PortListView(viewModel: vm, privilege: priv, toasts: toasts)
                 .frame(minWidth: 900, minHeight: 500)
         }
+
+        MenuBarExtra("UsedPorts", systemImage: "network") {
+            MenuBarContent(viewModel: vm, privilege: priv)
+        }
+        .menuBarExtraStyle(.window)
     }
 }

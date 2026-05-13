@@ -71,6 +71,7 @@ targets:
       - target: UsedPorts
     settings:
       base:
+        GENERATE_INFOPLIST_FILE: YES
         BUNDLE_LOADER: "$(TEST_HOST)"
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/UsedPorts.app/Contents/MacOS/UsedPorts"
 schemes:

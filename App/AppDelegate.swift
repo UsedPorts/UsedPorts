@@ -13,12 +13,14 @@ final class AppHostStore: ObservableObject {
     let settings: AppSettings
     let toasts: ToastCenter
     let updater: UpdateChecker
+    let logStore: LogStore
 
     init() {
         let scanner = PortScanner()
         let toasts = ToastCenter()
+        let logStore = LogStore()
         let viewModel = PortListViewModel(scanner: scanner, toasts: toasts)
-        let privilege = PrivilegeManager(scanner: scanner, toasts: toasts)
+        let privilege = PrivilegeManager(scanner: scanner, toasts: toasts, logStore: logStore)
         let settings = AppSettings()
         let updater = UpdateChecker()
         self.scanner = scanner
@@ -27,6 +29,8 @@ final class AppHostStore: ObservableObject {
         self.settings = settings
         self.toasts = toasts
         self.updater = updater
+        self.logStore = logStore
+        logStore.info("App started")
     }
 }
 

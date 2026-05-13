@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var updater: UpdateChecker
+    @ObservedObject var logStore: LogStore
 
     var body: some View {
         Form {
@@ -46,9 +47,25 @@ struct SettingsView: View {
                     }
                 }
             }
+            Section("Help") {
+                Text("If something went wrong, save the diagnostic log and attach it to a GitHub issue.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    Button("Save Diagnostic Log…") {
+                        Task { _ = await logStore.saveReport() }
+                    }
+                    Button("Report Issue on GitHub…") {
+                        logStore.openGitHubIssue()
+                    }
+                }
+                Text("Reporting opens a pre-filled GitHub issue and copies the log to your clipboard so you can paste it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 380)
+        .frame(width: 500, height: 480)
         .padding()
         .onAppear { settings.syncFromSystem() }
     }

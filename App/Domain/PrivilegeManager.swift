@@ -9,10 +9,12 @@ public final class PrivilegeManager: ObservableObject {
     private let helper = ElevatedHelper()
     private let scanner: PortScanner
     private let toasts: ToastCenter?
+    private let logStore: LogStore?
 
-    public init(scanner: PortScanner, toasts: ToastCenter? = nil) {
+    public init(scanner: PortScanner, toasts: ToastCenter? = nil, logStore: LogStore? = nil) {
         self.scanner = scanner
         self.toasts = toasts
+        self.logStore = logStore
     }
 
     public func enableSudo() async {
@@ -39,14 +41,17 @@ public final class PrivilegeManager: ObservableObject {
             lastError = String(localized: "Authorization cancelled")
             isSudoActive = false
             toasts?.showBanner(lastError)
+            logStore?.warning("sudo enable: user cancelled authorization")
         } catch HelperError.fifoFailed(let m) {
             lastError = String(localized: "IPC channel setup failed: \(m)")
             isSudoActive = false
             toasts?.showBanner(lastError)
+            logStore?.error("sudo enable: FIFO setup failed: \(m)")
         } catch {
             lastError = String(localized: "Helper failed to start: \(String(describing: error))")
             isSudoActive = false
             toasts?.showBanner(lastError)
+            logStore?.error("sudo enable: helper start failed: \(error)")
         }
     }
 

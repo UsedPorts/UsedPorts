@@ -78,7 +78,7 @@ struct ColumnFilterPopover: View {
         case .process:
             textFilter
         case .address:
-            multiSelectFilter(options: availableValues)
+            addressTextFilter
         case .state:
             multiSelectFilter(options: availableValues)
         case .user:
@@ -112,6 +112,27 @@ struct ColumnFilterPopover: View {
                 .textFieldStyle(.roundedBorder)
             Toggle("Regex", isOn: $useRegex)
             Button("Apply") { applyText() }
+        }
+    }
+
+    private var addressTextFilter: some View {
+        VStack(alignment: .leading) {
+            Text("Filter (IP/CIDR, comma separated)").font(.caption)
+            TextField(
+                "e.g. 127.0.0.1, 192.168.1.0/24, ::1",
+                text: $textInput,
+                onCommit: applyAddressText
+            )
+            .textFieldStyle(.roundedBorder)
+            Button("Apply") { applyAddressText() }
+        }
+    }
+
+    private func applyAddressText() {
+        if textInput.isEmpty {
+            viewModel.filter.byColumn.removeValue(forKey: column)
+        } else {
+            viewModel.filter.byColumn[column] = .text(textInput, regex: false)
         }
     }
 

@@ -72,7 +72,8 @@ public final class PortListViewModel: ObservableObject {
                 return e.processName.localizedCaseInsensitiveContains(t)
             }
         case (.address, .multiSelect(let set)): return set.contains(e.localAddress)
-        case (.address, .text(let t, _)): return e.localAddress.contains(t)
+        case (.address, .text(let t, _)):
+            return AddressMatcher.matches(localAddress: e.localAddress, query: t)
         case (.state, .multiSelect(let set)): return set.contains(e.state ?? "")
         case (.user, .multiSelect(let set)): return set.contains(e.user)
         case (.started, .timeRange(let from, let to)):

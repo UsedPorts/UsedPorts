@@ -14,8 +14,12 @@ struct PortListView: View {
                 Divider()
                 DetailPaneView(viewModel: viewModel, privilege: privilege, toasts: toasts)
             }
-            .task { viewModel.startStream() }
-            .onDisappear { Task { await viewModel.stopStream() } }
+            .task {
+                viewModel.bootstrapIfNeeded()
+                viewModel.setWindowVisible(true)
+            }
+            .onAppear { viewModel.setWindowVisible(true) }
+            .onDisappear { viewModel.setWindowVisible(false) }
         }
     }
 
@@ -28,7 +32,7 @@ struct PortListView: View {
             Toggle("Auto", isOn: $viewModel.autoRefresh)
                 .toggleStyle(.switch)
                 .onChange(of: viewModel.autoRefresh) { _, on in
-                    if on { viewModel.startStream() } else { Task { await viewModel.stopStream() } }
+                    if on { viewModel.bootstrapIfNeeded() } else { Task { await viewModel.stopStream() } }
                 }
             Toggle("sudo", isOn: Binding(
                 get: { privilege.isSudoActive },

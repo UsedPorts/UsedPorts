@@ -8,11 +8,17 @@ public final class PortListViewModel: ObservableObject {
     @Published public var filter: FilterState = FilterState()
     @Published public var selection: PortEntry.ID? = nil
     @Published public var autoRefresh: Bool = true
+    @Published public var windowVisible: Bool = true
 
     private let scanner: PortScanner
+    private let toasts: ToastCenter?
     private var streamTask: Task<Void, Never>?
+    private var currentBaseInterval: TimeInterval = 3.0
 
-    public init(scanner: PortScanner) { self.scanner = scanner }
+    public init(scanner: PortScanner, toasts: ToastCenter? = nil) {
+        self.scanner = scanner
+        self.toasts = toasts
+    }
 
     public var visibleEntries: [PortEntry] {
         Self.apply(sort: sort, filter: filter, to: rawEntries)
@@ -82,23 +88,53 @@ public final class PortListViewModel: ObservableObject {
 
     public func startStream(interval: TimeInterval = 3.0) {
         streamTask?.cancel()
+        currentBaseInterval = interval
+        let effective = effectiveInterval(base: interval)
         streamTask = Task { [weak self] in
             guard let self else { return }
-            let stream = await self.scanner.startPolling(intervalSeconds: interval)
+            let stream = await self.scanner.startPolling(intervalSeconds: effective)
             for await batch in stream {
                 if !Task.isCancelled {
-                    self.rawEntries = batch
+                    self.applyBatch(batch)
                 }
             }
         }
     }
 
+    public func bootstrapIfNeeded(interval: TimeInterval = 3.0) {
+        guard streamTask == nil else { return }
+        startStream(interval: interval)
+    }
+
+    public func setWindowVisible(_ visible: Bool) {
+        let was = windowVisible
+        windowVisible = visible
+        if was != visible, streamTask != nil {
+            startStream(interval: currentBaseInterval)
+        }
+    }
+
+    private func effectiveInterval(base: TimeInterval) -> TimeInterval {
+        return windowVisible ? base : base * 2
+    }
+
+    private func applyBatch(_ batch: [PortEntry]) {
+        let prevSelected = selection
+        rawEntries = batch
+        if let sel = prevSelected, !batch.contains(where: { $0.id == sel }) {
+            selection = nil
+            toasts?.showToast("선택했던 프로세스가 종료되었습니다")
+        }
+    }
+
     public func stopStream() async {
         streamTask?.cancel()
+        streamTask = nil
         await scanner.stopPolling()
     }
 
     public func refreshOnce() async throws {
-        rawEntries = try await scanner.scanOnce()
+        let batch = try await scanner.scanOnce()
+        applyBatch(batch)
     }
 }

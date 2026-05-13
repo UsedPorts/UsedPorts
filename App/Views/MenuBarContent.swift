@@ -36,5 +36,6 @@ struct MenuBarContent: View {
         }
         .padding(8)
         .frame(width: 360)
+        .task { viewModel.bootstrapIfNeeded() }
     }
 }

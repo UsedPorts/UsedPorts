@@ -12,7 +12,7 @@ struct UsedPortsApp: App {
         let t = ToastCenter()
         self.scanner = s
         _toasts = StateObject(wrappedValue: t)
-        _vm = StateObject(wrappedValue: PortListViewModel(scanner: s))
+        _vm = StateObject(wrappedValue: PortListViewModel(scanner: s, toasts: t))
         _priv = StateObject(wrappedValue: PrivilegeManager(scanner: s, toasts: t))
     }
 

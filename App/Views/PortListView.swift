@@ -26,8 +26,10 @@ struct PortListView: View {
     private var toolbar: some View {
         HStack {
             HStack(spacing: 4) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
                 TextField("Search PID, port, process…", text: $viewModel.filter.globalSearch)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
                 if !viewModel.filter.globalSearch.isEmpty {
                     Button {
                         viewModel.filter.globalSearch = ""
@@ -39,11 +41,20 @@ struct PortListView: View {
                     .help("검색어 지우기")
                 }
             }
-            .frame(maxWidth: 320)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(.thinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .frame(maxWidth: 360)
             Text("\(viewModel.visibleEntries.count) / \(viewModel.rawEntries.count)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .help("표시 중 / 전체 항목 수")
+            Button("Clear all") {
+                viewModel.filter = FilterState()
+            }
+            .disabled(viewModel.filter.byColumn.isEmpty && viewModel.filter.globalSearch.isEmpty)
+            .help("모든 필터 초기화")
             Spacer()
             Toggle("Auto", isOn: $viewModel.autoRefresh)
                 .toggleStyle(.switch)

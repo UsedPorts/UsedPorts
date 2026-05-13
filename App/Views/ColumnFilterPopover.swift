@@ -21,16 +21,13 @@ struct ColumnFilterPopover: View {
             filterRow
             Divider()
             HStack {
-                Button("Clear") {
+                Button(role: .destructive) {
                     viewModel.filter.byColumn.removeValue(forKey: column)
-                    numberInput = ""
-                    textInput = ""
-                    selected = []
-                    compoundText = ""
-                    compoundSelected = []
-                    tspec = TimeRangeSpec()
-                    lastNText = ""
+                    clearLocalState()
+                } label: {
+                    Label("Clear filter", systemImage: "xmark.circle")
                 }
+                .disabled(viewModel.filter.byColumn[column] == nil)
                 Spacer()
                 Button("Done") { isPresented = false }
                     .keyboardShortcut(.defaultAction)
@@ -39,6 +36,17 @@ struct ColumnFilterPopover: View {
         .padding(12)
         .frame(width: 280)
         .onAppear(perform: hydrate)
+    }
+
+    private func clearLocalState() {
+        numberInput = ""
+        textInput = ""
+        useRegex = false
+        selected = []
+        compoundText = ""
+        compoundSelected = []
+        tspec = TimeRangeSpec()
+        lastNText = ""
     }
 
     private func hydrate() {
@@ -258,13 +266,14 @@ struct ColumnFilterPopover: View {
                 Text("Custom (Fixed)").tag(TimeRangeSpec.Mode.customFixed)
                 Text("Custom (Last)").tag(TimeRangeSpec.Mode.customLast)
             }
+            .onChange(of: tspec.mode) { _, _ in applyTimeSpec() }
             if tspec.mode == .customFixed {
                 DatePicker("From", selection: Binding(
                     get: { tspec.fromDate ?? Date() },
-                    set: { tspec.fromDate = $0 }))
+                    set: { tspec.fromDate = $0; applyTimeSpec() }))
                 DatePicker("To", selection: Binding(
                     get: { tspec.toDate ?? Date() },
-                    set: { tspec.toDate = $0 }))
+                    set: { tspec.toDate = $0; applyTimeSpec() }))
             }
             if tspec.mode == .customLast {
                 HStack {
@@ -272,9 +281,10 @@ struct ColumnFilterPopover: View {
                     TextField("N", text: $lastNText)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 60)
+                        .onChange(of: lastNText) { _, _ in applyTimeSpec() }
                     Picker("", selection: Binding(
                         get: { tspec.lastUnit ?? "min" },
-                        set: { tspec.lastUnit = $0 })) {
+                        set: { tspec.lastUnit = $0; applyTimeSpec() })) {
                         Text("min").tag("min")
                         Text("hour").tag("hour")
                         Text("day").tag("day")

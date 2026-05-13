@@ -51,6 +51,51 @@ final class NumberSpecTests: XCTestCase {
         XCTAssertTrue(s.ranges.isEmpty)
     }
 
+    func test_parse_plusSuffix_meansGreaterOrEqual() {
+        let s = NumberSpec.parse("3000+")
+        XCTAssertTrue(s.matches(3000))
+        XCTAssertTrue(s.matches(99999))
+        XCTAssertFalse(s.matches(2999))
+    }
+
+    func test_parse_openEndedRight_tilde() {
+        let s = NumberSpec.parse("3000~")
+        XCTAssertTrue(s.matches(3000))
+        XCTAssertTrue(s.matches(50000))
+        XCTAssertFalse(s.matches(2999))
+    }
+
+    func test_parse_openEndedRight_dash() {
+        let s = NumberSpec.parse("3000-")
+        XCTAssertTrue(s.matches(3000))
+        XCTAssertTrue(s.matches(50000))
+        XCTAssertFalse(s.matches(2999))
+    }
+
+    func test_parse_openEndedLeft_tilde() {
+        let s = NumberSpec.parse("~3000")
+        XCTAssertTrue(s.matches(0))
+        XCTAssertTrue(s.matches(3000))
+        XCTAssertFalse(s.matches(3001))
+    }
+
+    func test_parse_openEndedLeft_dash() {
+        let s = NumberSpec.parse("-3000")
+        XCTAssertTrue(s.matches(100))
+        XCTAssertTrue(s.matches(3000))
+        XCTAssertFalse(s.matches(3001))
+    }
+
+    func test_parse_mixedOperators() {
+        let s = NumberSpec.parse("80, 1000~2000, 5000+, ~50")
+        XCTAssertTrue(s.matches(25))      // ~50
+        XCTAssertTrue(s.matches(80))      // exact
+        XCTAssertTrue(s.matches(1500))    // 1000~2000
+        XCTAssertTrue(s.matches(8000))    // 5000+
+        XCTAssertFalse(s.matches(3000))
+        XCTAssertFalse(s.matches(4999))
+    }
+
     func test_emptyMatchesAll() {
         let s = NumberSpec()
         XCTAssertTrue(s.matches(1))

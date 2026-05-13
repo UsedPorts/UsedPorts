@@ -182,9 +182,9 @@ struct ColumnFilterPopover: View {
 
     private var numberFilter: some View {
         VStack(alignment: .leading) {
-            Text("Filter (e.g. 3000, 1000-2000, 8080,9000)").font(.caption)
+            Text("3000  ·  1000~2000  ·  5000+  ·  ~80").font(.caption).foregroundStyle(.secondary)
             HStack(spacing: 4) {
-                TextField("3000, 1000-2000", text: $numberInput, onCommit: applyNumber)
+                TextField("e.g. 3000, 1000~2000, 5000+", text: $numberInput, onCommit: applyNumber)
                     .textFieldStyle(.roundedBorder)
                     // Apply immediately on every keystroke — works without an Apply button or onCommit.
                     .onChange(of: numberInput) { _, _ in applyNumber() }

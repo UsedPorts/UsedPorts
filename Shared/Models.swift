@@ -118,22 +118,43 @@ public struct NumberSpec: Hashable, Codable {
 
     public var isEmpty: Bool { exact.isEmpty && ranges.isEmpty }
 
-    /// Parses a user input string. e.g. "3000", "1000-2000", "3000,5432,8080-8090".
+    /// Parses a user input string.
+    /// Supported syntax (comma- or whitespace-separated):
+    ///   `3000`              → exact value
+    ///   `1000-2000`         → range (same as a~b)
+    ///   `1000~2000`         → range
+    ///   `3000+`             → 3000 or above
+    ///   `3000~` / `3000-`   → 3000 or above (open-ended right)
+    ///   `~3000` / `-3000`   → 3000 or below (open-ended left, from 0)
     /// Invalid tokens are ignored.
     public static func parse(_ text: String) -> NumberSpec {
         var exact = Set<Int>()
         var ranges: [ClosedRange<Int>] = []
         let tokens = text.split(whereSeparator: { $0 == "," || $0.isWhitespace })
         for token in tokens {
-            // 한국 사용자 관습 등으로 `~`도 범위 구분자로 허용.
-            let sep = token.firstIndex(of: "-") ?? token.firstIndex(of: "~")
+            let str = String(token)
+            // `N+` suffix → N or above
+            if str.hasSuffix("+"), let n = Int(str.dropLast()) {
+                ranges.append(n...Int.max)
+                continue
+            }
+            // `-` or `~` range separator
+            let sep = str.firstIndex(where: { $0 == "-" || $0 == "~" })
             if let sep {
-                let lhs = String(token[..<sep])
-                let rhs = String(token[token.index(after: sep)...])
-                if let a = Int(lhs), let b = Int(rhs), a <= b {
+                let lhs = String(str[..<sep])
+                let rhs = String(str[str.index(after: sep)...])
+                let lhsN = Int(lhs)
+                let rhsN = Int(rhs)
+                if let a = lhsN, let b = rhsN, a <= b {
                     ranges.append(a...b)
+                } else if let a = lhsN, rhs.isEmpty {
+                    ranges.append(a...Int.max)             // `N~` / `N-`
+                } else if let b = rhsN, lhs.isEmpty {
+                    ranges.append(0...b)                    // `~N` / `-N`
                 }
-            } else if let n = Int(token) {
+                continue
+            }
+            if let n = Int(str) {
                 exact.insert(n)
             }
         }

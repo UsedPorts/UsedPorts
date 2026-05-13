@@ -16,8 +16,6 @@ struct ColumnFilterPopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sortRow
-            Divider()
             filterRow
             Divider()
             HStack {
@@ -57,34 +55,46 @@ struct ColumnFilterPopover: View {
         }
     }
 
-    private var sortRow: some View {
-        HStack {
-            Text("Sort").bold()
-            Spacer()
-            Button("Asc") { viewModel.sort = SortSpec(column: column, dir: .asc) }
-                .buttonStyle(.bordered)
-            Button("Desc") { viewModel.sort = SortSpec(column: column, dir: .desc) }
-                .buttonStyle(.bordered)
-        }
-    }
-
     @ViewBuilder
     private var filterRow: some View {
         switch column {
         case .pid, .port:
             numberFilter
         case .proto:
-            multiSelectFilter(options: ["TCP", "UDP"])
+            tokenTextFilter(placeholder: "TCP, UDP")
         case .process:
             textFilter
         case .address:
             addressTextFilter
         case .state:
-            multiSelectFilter(options: availableValues)
+            tokenTextFilter(placeholder: "LISTEN, ESTABLISHED")
         case .user:
-            multiSelectFilter(options: availableValues)
+            tokenTextFilter(placeholder: "name, _postgres")
         case .started:
             timeRangeFilter
+        }
+    }
+
+    private func tokenTextFilter(placeholder: String) -> some View {
+        VStack(alignment: .leading) {
+            Text("Filter (comma separated, partial match)").font(.caption)
+            TextField(placeholder, text: $textInput, onCommit: applyTokenText)
+                .textFieldStyle(.roundedBorder)
+            Button("Apply") { applyTokenText() }
+        }
+        .onAppear {
+            if case .text(let t, _) = viewModel.filter.byColumn[column] {
+                textInput = t
+            }
+        }
+    }
+
+    private func applyTokenText() {
+        let trimmed = textInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            viewModel.filter.byColumn.removeValue(forKey: column)
+        } else {
+            viewModel.filter.byColumn[column] = .text(trimmed, regex: false)
         }
     }
 

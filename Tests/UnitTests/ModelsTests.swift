@@ -37,3 +37,64 @@ final class NumberSpecTests: XCTestCase {
         XCTAssertTrue(s.matches(99999))
     }
 }
+
+final class TimeRangeSpecTests: XCTestCase {
+    func test_anyMode_returnsNilRange() {
+        let s = TimeRangeSpec(mode: .any)
+        let (from, to) = s.toRange()
+        XCTAssertNil(from)
+        XCTAssertNil(to)
+        XCTAssertTrue(s.isEmpty)
+    }
+
+    func test_last5m_returnsRecentFrom() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let s = TimeRangeSpec(mode: .last5m)
+        let (from, to) = s.toRange(now: now)
+        XCTAssertNotNil(from)
+        XCTAssertNil(to)
+        XCTAssertEqual(from!.timeIntervalSince1970, 999_700, accuracy: 0.001)
+        XCTAssertFalse(s.isEmpty)
+    }
+
+    func test_last1h_returnsHourAgoFrom() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let s = TimeRangeSpec(mode: .last1h)
+        let (from, _) = s.toRange(now: now)
+        XCTAssertEqual(from!.timeIntervalSince1970, 996_400, accuracy: 0.001)
+    }
+
+    func test_customLast_min() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let s = TimeRangeSpec(mode: .customLast, lastN: 10, lastUnit: "min")
+        let (from, _) = s.toRange(now: now)
+        XCTAssertEqual(from!.timeIntervalSince1970, 999_400, accuracy: 0.001)
+    }
+
+    func test_customLast_hour() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let s = TimeRangeSpec(mode: .customLast, lastN: 2, lastUnit: "hour")
+        let (from, _) = s.toRange(now: now)
+        XCTAssertEqual(from!.timeIntervalSince1970, 992_800, accuracy: 0.001)
+    }
+
+    func test_customLast_day() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let s = TimeRangeSpec(mode: .customLast, lastN: 1, lastUnit: "day")
+        let (from, _) = s.toRange(now: now)
+        XCTAssertEqual(from!.timeIntervalSince1970, 913_600, accuracy: 0.001)
+    }
+
+    func test_customLast_invalidNIsEmpty() {
+        let s = TimeRangeSpec(mode: .customLast, lastN: 0, lastUnit: "min")
+        XCTAssertTrue(s.isEmpty)
+        let (from, to) = s.toRange()
+        XCTAssertNil(from)
+        XCTAssertNil(to)
+    }
+
+    func test_customFixed_emptyWhenNoDates() {
+        let s = TimeRangeSpec(mode: .customFixed)
+        XCTAssertTrue(s.isEmpty)
+    }
+}

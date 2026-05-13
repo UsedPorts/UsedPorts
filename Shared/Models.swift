@@ -139,12 +139,72 @@ public struct NumberSpec: Hashable, Codable {
     }
 }
 
+/// Time-range filter spec for the Started column.
+/// Stores mode + auxiliary fields together to preserve the selected preset.
+public struct TimeRangeSpec: Hashable, Codable {
+    public enum Mode: String, Codable {
+        case any
+        case last5m
+        case last1h
+        case today
+        case customFixed     // from/to DatePicker
+        case customLast      // "Last N unit" form
+    }
+    public var mode: Mode
+    public var fromDate: Date?
+    public var toDate: Date?
+    public var lastN: Int?
+    public var lastUnit: String?  // "min", "hour", "day"
+
+    public init(mode: Mode = .any,
+                fromDate: Date? = nil,
+                toDate: Date? = nil,
+                lastN: Int? = nil,
+                lastUnit: String? = nil) {
+        self.mode = mode
+        self.fromDate = fromDate
+        self.toDate = toDate
+        self.lastN = lastN
+        self.lastUnit = lastUnit
+    }
+
+    /// Computes the (from, to) range relative to the current time.
+    public func toRange(now: Date = Date()) -> (Date?, Date?) {
+        switch mode {
+        case .any: return (nil, nil)
+        case .last5m: return (now.addingTimeInterval(-300), nil)
+        case .last1h: return (now.addingTimeInterval(-3600), nil)
+        case .today: return (Calendar.current.startOfDay(for: now), nil)
+        case .customFixed: return (fromDate, toDate)
+        case .customLast:
+            guard let n = lastN, n > 0 else { return (nil, nil) }
+            let secs: TimeInterval
+            switch lastUnit {
+            case "hour": secs = TimeInterval(n) * 3600
+            case "day":  secs = TimeInterval(n) * 86400
+            default:     secs = TimeInterval(n) * 60   // "min" default
+            }
+            return (now.addingTimeInterval(-secs), nil)
+        }
+    }
+
+    public var isEmpty: Bool {
+        switch mode {
+        case .any: return true
+        case .customFixed: return fromDate == nil && toDate == nil
+        case .customLast: return (lastN ?? 0) <= 0
+        default: return false
+        }
+    }
+}
+
 public enum ColumnFilter: Hashable, Codable {
     case number(NumberSpec)
     case multiSelect(Set<String>)
     case text(String, regex: Bool)
     case timeRange(Date?, Date?)
     case compound(selected: Set<String>, text: String)
+    case timeSpec(TimeRangeSpec)
 
     public var isEmpty: Bool {
         switch self {
@@ -153,6 +213,7 @@ public enum ColumnFilter: Hashable, Codable {
         case .text(let t, _): return t.isEmpty
         case .timeRange(let a, let b): return a == nil && b == nil
         case .compound(let sel, let t): return sel.isEmpty && t.isEmpty
+        case .timeSpec(let s): return s.isEmpty
         }
     }
 }

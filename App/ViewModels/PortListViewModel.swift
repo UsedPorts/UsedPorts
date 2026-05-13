@@ -122,6 +122,12 @@ public final class PortListViewModel: ObservableObject {
             if let from, st < from { return false }
             if let to, st > to { return false }
             return true
+        case (.started, .timeSpec(let spec)):
+            let (from, to) = spec.toRange()
+            guard let st = e.startTime else { return from == nil && to == nil }
+            if let from, st < from { return false }
+            if let to, st > to { return false }
+            return true
         default: return true
         }
     }

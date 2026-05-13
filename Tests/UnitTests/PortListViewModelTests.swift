@@ -60,6 +60,26 @@ final class PortListViewModelTests: XCTestCase {
         XCTAssertEqual(r.map(\.processName), ["postgres"])
     }
 
+    func test_filterByUser_tokens() {
+        var f = FilterState()
+        f.byColumn[.user] = .text("postgres, name", regex: false)
+        let r = PortListViewModel.apply(
+            sort: SortSpec(column: .port, dir: .asc),
+            filter: f,
+            to: makeEntries())
+        XCTAssertEqual(Set(r.map(\.processName)), Set(["node", "postgres", "Chrome"]))
+    }
+
+    func test_filterByProto_tokens() {
+        var f = FilterState()
+        f.byColumn[.proto] = .text("udp", regex: false)
+        let r = PortListViewModel.apply(
+            sort: SortSpec(column: .port, dir: .asc),
+            filter: f,
+            to: makeEntries())
+        XCTAssertEqual(r.map(\.processName), ["Chrome"])
+    }
+
     func test_globalSearch_matchesPid() {
         var f = FilterState()
         f.globalSearch = "200"

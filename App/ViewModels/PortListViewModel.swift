@@ -9,6 +9,7 @@ public final class PortListViewModel: ObservableObject {
     @Published public var selection: PortEntry.ID? = nil
     @Published public var autoRefresh: Bool = true
     @Published public var windowVisible: Bool = true
+    @Published public var columnCustomization: TableColumnCustomization<PortEntry> = TableColumnCustomization<PortEntry>()
 
     private let scanner: PortScanner
     private let toasts: ToastCenter?
@@ -19,10 +20,22 @@ public final class PortListViewModel: ObservableObject {
     private var augTask: Task<Void, Never>?
     private let augmenter: ProcessAugmenting
 
+    private let customizationKey = "UsedPorts.tableColumnCustomization"
+
     public init(scanner: PortScanner, toasts: ToastCenter? = nil, augmenter: ProcessAugmenting = ProcessAugmenter()) {
         self.scanner = scanner
         self.toasts = toasts
         self.augmenter = augmenter
+        if let data = UserDefaults.standard.data(forKey: customizationKey),
+           let decoded = try? JSONDecoder().decode(TableColumnCustomization<PortEntry>.self, from: data) {
+            self.columnCustomization = decoded
+        }
+    }
+
+    public func persistCustomization() {
+        if let data = try? JSONEncoder().encode(columnCustomization) {
+            UserDefaults.standard.set(data, forKey: customizationKey)
+        }
     }
 
     public var visibleEntries: [PortEntry] {
@@ -61,6 +74,8 @@ public final class PortListViewModel: ObservableObject {
         case (.pid, .number(let s)): return s.matches(Int(e.pid))
         case (.port, .number(let s)): return s.matches(Int(e.port))
         case (.proto, .multiSelect(let set)): return set.contains(e.proto.rawValue)
+        case (.proto, .text(let t, _)):
+            return matchesTokens(t, against: e.proto.rawValue)
         case (.process, .text(let t, let regex)):
             if regex {
                 if let re = try? NSRegularExpression(pattern: t) {
@@ -75,7 +90,11 @@ public final class PortListViewModel: ObservableObject {
         case (.address, .text(let t, _)):
             return AddressMatcher.matches(localAddress: e.localAddress, query: t)
         case (.state, .multiSelect(let set)): return set.contains(e.state ?? "")
+        case (.state, .text(let t, _)):
+            return matchesTokens(t, against: e.state ?? "")
         case (.user, .multiSelect(let set)): return set.contains(e.user)
+        case (.user, .text(let t, _)):
+            return matchesTokens(t, against: e.user)
         case (.started, .timeRange(let from, let to)):
             guard let st = e.startTime else { return from == nil && to == nil }
             if let from, st < from { return false }
@@ -83,6 +102,15 @@ public final class PortListViewModel: ObservableObject {
             return true
         default: return true
         }
+    }
+
+    private nonisolated static func matchesTokens(_ query: String, against value: String) -> Bool {
+        let tokens = query
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        if tokens.isEmpty { return true }
+        return tokens.contains { value.localizedCaseInsensitiveContains($0) }
     }
 
     public nonisolated static func compare(_ a: PortEntry, _ b: PortEntry, _ s: SortSpec) -> Bool {

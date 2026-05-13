@@ -12,6 +12,9 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     ENABLE_HARDENED_RUNTIME: YES
     ENABLE_APP_SANDBOX: NO
+    DEAD_CODE_STRIPPING: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZED_STRING_SWIFTUI_SUPPORT: YES
 targets:
   UsedPorts:
     type: application
@@ -48,6 +51,8 @@ targets:
           set -e
           mkdir -p "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
           cp -f "${BUILT_PRODUCTS_DIR}/uph" "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/uph"
+        inputFiles:
+          - "$(BUILT_PRODUCTS_DIR)/uph"
         outputFiles:
           - "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/uph"
 

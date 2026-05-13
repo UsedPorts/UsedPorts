@@ -20,7 +20,7 @@ func handle(_ req: HelperRequest) async {
     case .scan:
         do {
             let r = try await runner.run("/usr/sbin/lsof",
-                                          args: ["-nP", "-iTCP", "-iUDP", "-F", "pcuLnPT"],
+                                          args: ["-nP", "-iTCP", "-iUDP", "-F", "pcuLnPTt"],
                                           timeout: 3.0)
             let entries = lsofParser.parse(r.stdoutString)
             writeResponse(HelperResponse(id: req.id, ok: true, entries: entries))

@@ -5,12 +5,18 @@ public enum NetProto: String, Codable, CaseIterable, Hashable {
     case udp = "UDP"
 }
 
+public enum IPFamily: String, Codable, CaseIterable, Hashable {
+    case v4 = "IPv4"
+    case v6 = "IPv6"
+}
+
 public struct PortEntry: Identifiable, Hashable, Codable {
     public let id: String
     public let pid: Int32
     public let processName: String
     public let user: String
     public let proto: NetProto
+    public let ipFamily: IPFamily?
     public let localAddress: String
     public let port: UInt16
     public let state: String?
@@ -25,6 +31,7 @@ public struct PortEntry: Identifiable, Hashable, Codable {
         processName: String,
         user: String,
         proto: NetProto,
+        ipFamily: IPFamily? = nil,
         localAddress: String,
         port: UInt16,
         state: String?,
@@ -37,6 +44,7 @@ public struct PortEntry: Identifiable, Hashable, Codable {
         self.processName = processName
         self.user = user
         self.proto = proto
+        self.ipFamily = ipFamily
         self.localAddress = localAddress
         self.port = port
         self.state = state
@@ -50,10 +58,11 @@ public extension PortEntry {
     /// Sort-key helpers that turn optionals into stable, Comparable strings/dates.
     var stateForSort: String { state ?? "" }
     var startedForSort: Date { startTime ?? .distantPast }
+    var ipFamilyForSort: String { ipFamily?.rawValue ?? "" }
 }
 
 public enum PortColumn: String, CaseIterable, Hashable, Codable {
-    case pid, port, proto, process, address, state, user, started
+    case pid, port, proto, ipFamily, process, address, state, user, started
 }
 
 public enum SortDir: String, Codable { case asc, desc }

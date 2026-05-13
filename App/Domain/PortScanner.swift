@@ -29,7 +29,7 @@ public actor PortScanner: PortScanning {
         }
         let r = try await runner.run(
             "/usr/sbin/lsof",
-            args: ["-nP", "-iTCP", "-iUDP", "-F", "pcuLnPT"],
+            args: ["-nP", "-iTCP", "-iUDP", "-F", "pcuLnPTt"],
             timeout: 2.0
         )
         return parser.parse(r.stdoutString)

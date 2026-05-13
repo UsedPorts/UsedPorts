@@ -23,7 +23,7 @@ final class PortScannerTests: XCTestCase {
         _ = try await scanner.scanOnce()
         let (path, args) = runner.capturedCalls.first!
         XCTAssertEqual(path, "/usr/sbin/lsof")
-        XCTAssertEqual(args, ["-nP", "-iTCP", "-iUDP", "-F", "pcuLnPT"])
+        XCTAssertEqual(args, ["-nP", "-iTCP", "-iUDP", "-F", "pcuLnPTt"])
     }
 
     func test_scanOnce_parsesEntries() async throws {

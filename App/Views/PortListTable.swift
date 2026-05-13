@@ -44,6 +44,9 @@ struct PortListTable: View {
             TableColumn("Proto", value: \PortEntry.proto.rawValue) { e in Text(e.proto.rawValue) }
                 .width(min: 50, ideal: 60)
                 .customizationID("proto")
+            TableColumn("IP", value: \PortEntry.ipFamilyForSort) { e in Text(e.ipFamily?.rawValue ?? "—") }
+                .width(min: 50, ideal: 60)
+                .customizationID("ipFamily")
             TableColumn("Process", value: \PortEntry.processName) { e in Text(e.processName) }
                 .width(min: 100, ideal: 160)
                 .customizationID("process")
@@ -129,6 +132,7 @@ struct PortListTable: View {
         case .pid: return "PID"
         case .port: return "Port"
         case .proto: return "Proto"
+        case .ipFamily: return "IP"
         case .process: return "Process"
         case .address: return "Address"
         case .state: return "State"
@@ -139,10 +143,11 @@ struct PortListTable: View {
 
     private func dynamicValues(for c: PortColumn) -> [String] {
         switch c {
-        case .address: return Array(Set(viewModel.rawEntries.map { $0.localAddress })).sorted()
-        case .state:   return Array(Set(viewModel.rawEntries.compactMap { $0.state })).sorted()
-        case .user:    return Array(Set(viewModel.rawEntries.map { $0.user })).sorted()
-        default:       return []
+        case .address:  return Array(Set(viewModel.rawEntries.map { $0.localAddress })).sorted()
+        case .state:    return Array(Set(viewModel.rawEntries.compactMap { $0.state })).sorted()
+        case .user:     return Array(Set(viewModel.rawEntries.map { $0.user })).sorted()
+        case .ipFamily: return ["IPv4", "IPv6"]
+        default:        return []
         }
     }
 }

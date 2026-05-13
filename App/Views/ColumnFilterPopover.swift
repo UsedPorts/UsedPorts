@@ -86,6 +86,8 @@ struct ColumnFilterPopover: View {
             numberFilter
         case .proto:
             compoundFilter(placeholder: "TCP, UDP", options: ["TCP", "UDP"], collapsible: false)
+        case .ipFamily:
+            compoundFilter(placeholder: "IPv4, IPv6", options: ["IPv4", "IPv6"], collapsible: false)
         case .process:
             textFilter
         case .address:

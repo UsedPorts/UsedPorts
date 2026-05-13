@@ -3,7 +3,8 @@ import Foundation
 public struct LsofParser {
     public init() {}
 
-    /// `lsof -F pcuLnPT` 출력을 파싱.
+    /// Parses `lsof -F pcuLnPTt` output.
+    /// The added `t` field is the file TYPE (e.g. IPv4, IPv6), used to distinguish IP family.
     public func parse(_ text: String) -> [PortEntry] {
         var result: [PortEntry] = []
 
@@ -13,6 +14,7 @@ public struct LsofParser {
 
         var curFd: String = ""
         var curProto: NetProto? = nil
+        var curIPFamily: IPFamily? = nil
         var curName: String = ""
         var curState: String? = nil
 
@@ -20,18 +22,20 @@ public struct LsofParser {
             guard let pid = curPid, let proto = curProto, !curName.isEmpty else { return }
             let localPart = curName.split(separator: "-", maxSplits: 1).first.map(String.init) ?? curName
             guard let (addr, port) = splitAddrPort(localPart) else { return }
-            let id = "\(pid)-\(curFd)-\(proto.rawValue)-\(port)"
+            let famSuffix = curIPFamily?.rawValue ?? "-"
+            let id = "\(pid)-\(curFd)-\(proto.rawValue)-\(famSuffix)-\(port)"
             result.append(PortEntry(
                 id: id,
                 pid: pid,
                 processName: curCommand,
                 user: curUser,
                 proto: proto,
+                ipFamily: curIPFamily,
                 localAddress: addr,
                 port: port,
                 state: curState
             ))
-            curFd = ""; curProto = nil; curName = ""; curState = nil
+            curFd = ""; curProto = nil; curIPFamily = nil; curName = ""; curState = nil
         }
 
         for raw in text.split(separator: "\n", omittingEmptySubsequences: false) {
@@ -42,7 +46,7 @@ public struct LsofParser {
                 flushFd()
                 curPid = Int32(rest)
                 curCommand = ""; curUser = ""
-                curFd = ""; curProto = nil; curName = ""; curState = nil
+                curFd = ""; curProto = nil; curIPFamily = nil; curName = ""; curState = nil
             case "c": curCommand = rest
             case "L": curUser = rest
             case "u": continue // UID — ignored; prefer "L" login name
@@ -52,6 +56,9 @@ public struct LsofParser {
             case "P":
                 if rest == "TCP" { curProto = .tcp }
                 else if rest == "UDP" { curProto = .udp }
+            case "t":
+                if rest == "IPv4" { curIPFamily = .v4 }
+                else if rest == "IPv6" { curIPFamily = .v6 }
             case "n": curName = rest
             case "T":
                 if rest.hasPrefix("ST=") { curState = String(rest.dropFirst(3)) }

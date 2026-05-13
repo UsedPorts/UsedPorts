@@ -53,6 +53,14 @@ final class LsofParserTests: XCTestCase {
         let e = entries[0]
         XCTAssertEqual(e.localAddress, "[::1]")
         XCTAssertEqual(e.port, 8443)
+        XCTAssertEqual(e.ipFamily, .v6)
+    }
+
+    func test_basic_ipFamilyIsIPv4() {
+        let entries = parser.parse(loadFixture("lsof-basic"))
+        for e in entries {
+            XCTAssertEqual(e.ipFamily, .v4, "expected IPv4 for \(e.processName) port \(e.port)")
+        }
     }
 
     func test_uniqueIdsAcrossFds() {

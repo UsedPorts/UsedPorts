@@ -117,6 +117,15 @@ public final class PortListViewModel: ObservableObject {
             if !t.isEmpty, AddressMatcher.matches(localAddress: e.localAddress, query: t) { return true }
             if sel.isEmpty && t.isEmpty { return true }
             return false
+        case (.ipFamily, .multiSelect(let set)): return set.contains(e.ipFamily?.rawValue ?? "")
+        case (.ipFamily, .text(let t, _)):
+            return matchesTokens(t, against: e.ipFamily?.rawValue ?? "")
+        case (.ipFamily, .compound(let sel, let t)):
+            let f = e.ipFamily?.rawValue ?? ""
+            if sel.contains(f) { return true }
+            if !t.isEmpty, Self.matchesTokens(t, against: f) { return true }
+            if sel.isEmpty && t.isEmpty { return true }
+            return false
         case (.started, .timeRange(let from, let to)):
             if from == nil && to == nil { return true }
             // Rows whose startTime has not yet been populated by ProcessAugmenter are passed through conservatively.
@@ -150,6 +159,10 @@ public final class PortListViewModel: ObservableObject {
         case .pid: return asc ? a.pid < b.pid : a.pid > b.pid
         case .port: return asc ? a.port < b.port : a.port > b.port
         case .proto: return asc ? a.proto.rawValue < b.proto.rawValue : a.proto.rawValue > b.proto.rawValue
+        case .ipFamily:
+            let av = a.ipFamily?.rawValue ?? ""
+            let bv = b.ipFamily?.rawValue ?? ""
+            return asc ? av < bv : av > bv
         case .process: return asc ? a.processName < b.processName : a.processName > b.processName
         case .address: return asc ? a.localAddress < b.localAddress : a.localAddress > b.localAddress
         case .state: return asc ? (a.state ?? "") < (b.state ?? "") : (a.state ?? "") > (b.state ?? "")

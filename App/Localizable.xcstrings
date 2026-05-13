@@ -5,6 +5,7 @@
 
     },
     "(inactive)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -37,6 +38,9 @@
         }
       }
     },
+    "%@ rows selected" : {
+
+    },
     "%lld ports" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -48,11 +52,21 @@
         }
       }
     },
+    "%lld rows selected" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld개 행 선택됨"
+          }
+        }
+      }
+    },
     "3000  ·  1000~2000  ·  5000+  ·  ~80" : {
 
     },
     "Already terminated" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -98,16 +112,6 @@
         }
       }
     },
-    "Automatically check for updates" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "업데이트 자동 확인"
-          }
-        }
-      }
-    },
     "Auto-refresh" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -115,6 +119,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "자동 새로고침"
+          }
+        }
+      }
+    },
+    "Automatically check for updates" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "업데이트 자동 확인"
           }
         }
       }
@@ -130,7 +145,8 @@
         }
       }
     },
-    "Check Now" : {
+    "Check now" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -140,7 +156,7 @@
         }
       }
     },
-    "Check now" : {
+    "Check Now" : {
       "extractionState" : "stale",
       "localizations" : {
         "ko" : {
@@ -206,16 +222,6 @@
         }
       }
     },
-    "Copied 1 row" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1개 행 복사됨"
-          }
-        }
-      }
-    },
     "Copied %lld rows" : {
       "localizations" : {
         "ko" : {
@@ -226,7 +232,19 @@
         }
       }
     },
+    "Copied 1 row" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1개 행 복사됨"
+          }
+        }
+      }
+    },
     "Copy All" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -237,6 +255,7 @@
       }
     },
     "Copy All (TSV)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -269,6 +288,7 @@
       }
     },
     "Copy PIDs" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -290,6 +310,7 @@
       }
     },
     "Copy Ports" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -401,7 +422,19 @@
         }
       }
     },
+    "Filter active" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 활성"
+          }
+        }
+      }
+    },
     "Filter: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -412,22 +445,12 @@
       }
     },
     "Filter: %@ (active)" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "필터: %@ (활성)"
-          }
-        }
-      }
-    },
-    "Filter active" : {
       "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "필터 활성"
+            "value" : "필터: %@ (활성)"
           }
         }
       }
@@ -455,6 +478,7 @@
       }
     },
     "Help" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -476,6 +500,7 @@
       }
     },
     "Helper failed to start: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -517,6 +542,7 @@
       }
     },
     "IPC channel setup failed: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -549,6 +575,7 @@
       }
     },
     "Kill All" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -559,7 +586,6 @@
       }
     },
     "Killed PID %lld (%@)" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -673,7 +699,6 @@
       }
     },
     "Not responding (Kill -9 failed)" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -694,7 +719,6 @@
       }
     },
     "Permission denied — switch to sudo mode" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -715,6 +739,7 @@
       }
     },
     "Pin All to Menu Bar" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -724,7 +749,8 @@
         }
       }
     },
-    "Pin to Menu Bar" : {
+    "Pin to menu bar" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -734,7 +760,8 @@
         }
       }
     },
-    "Pin to menu bar" : {
+    "Pin to Menu Bar" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -745,6 +772,7 @@
       }
     },
     "Pinned" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -777,6 +805,7 @@
       }
     },
     "Recent" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -820,6 +849,7 @@
       }
     },
     "Report Issue on GitHub…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -860,17 +890,8 @@
         }
       }
     },
-    "%lld rows selected" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld개 행 선택됨"
-          }
-        }
-      }
-    },
     "Save Diagnostic Log…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -924,6 +945,7 @@
       }
     },
     "Settings" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -945,6 +967,7 @@
       }
     },
     "Show All Ports" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -1083,7 +1106,8 @@
         }
       }
     },
-    "Unpin from Menu Bar" : {
+    "Unpin from menu bar" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -1093,7 +1117,8 @@
         }
       }
     },
-    "Unpin from menu bar" : {
+    "Unpin from Menu Bar" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -1139,6 +1164,7 @@
       }
     },
     "View Release" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {

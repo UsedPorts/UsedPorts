@@ -46,6 +46,12 @@ public struct PortEntry: Identifiable, Hashable, Codable {
     }
 }
 
+public extension PortEntry {
+    /// Sort-key helpers that turn optionals into stable, Comparable strings/dates.
+    var stateForSort: String { state ?? "" }
+    var startedForSort: Date { startTime ?? .distantPast }
+}
+
 public enum PortColumn: String, CaseIterable, Hashable, Codable {
     case pid, port, proto, process, address, state, user, started
 }

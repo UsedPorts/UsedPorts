@@ -39,6 +39,10 @@ public final class PrivilegeManager: ObservableObject {
             lastError = "권한 부여가 취소되었습니다"
             isSudoActive = false
             toasts?.showBanner(lastError)
+        } catch HelperError.fifoFailed(let m) {
+            lastError = "IPC 채널 설정 실패: \(m)"
+            isSudoActive = false
+            toasts?.showBanner(lastError)
         } catch {
             lastError = "헬퍼 시작 실패: \(error)"
             isSudoActive = false

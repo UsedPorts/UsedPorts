@@ -40,9 +40,10 @@ final class AppHostStore: ObservableObject {
 struct AppDelegateMenuBarView: View {
     @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var privilege: PrivilegeManager
+    @ObservedObject var settings: AppSettings
 
     var body: some View {
-        MenuBarContent(viewModel: viewModel, privilege: privilege)
+        MenuBarContent(viewModel: viewModel, privilege: privilege, settings: settings)
     }
 }
 
@@ -58,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var visibilityCancellable: AnyCancellable?
+    private var titleCancellables: Set<AnyCancellable> = []
 
     override init() {
         self.host = AppHostStore()
@@ -68,12 +70,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         installStatusItem()
         observeVisibility()
         observeUpdateChecker()
+        observePinnedPorts()
         Task { [host] in
             // Auto-check on launch (noop if disabled). Results are surfaced via host.toasts.
             if host.updater.autoCheckEnabled {
                 await host.updater.checkNow()
             }
         }
+    }
+
+    /// Updates the status text next to the menu bar icon (pinned port state) whenever pinnedPorts or rawEntries changes.
+    private func observePinnedPorts() {
+        host.settings.$pinnedPorts
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateStatusItemTitle() }
+            .store(in: &titleCancellables)
+        host.viewModel.$rawEntries
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateStatusItemTitle() }
+            .store(in: &titleCancellables)
+        updateStatusItemTitle()
+    }
+
+    private func updateStatusItemTitle() {
+        guard let button = statusItem?.button else { return }
+        let pinned = host.settings.pinnedPorts.sorted()
+        if pinned.isEmpty {
+            button.attributedTitle = NSAttributedString()
+            return
+        }
+        let active = Set(host.viewModel.rawEntries.map { $0.port })
+        let result = NSMutableAttributedString()
+        result.append(NSAttributedString(string: "  "))
+        for (i, port) in pinned.enumerated() {
+            let isActive = active.contains(port)
+            let color: NSColor = isActive ? .controlAccentColor : .tertiaryLabelColor
+            let attrs: [NSAttributedString.Key: Any] = [
+                .foregroundColor: color,
+                .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium),
+            ]
+            result.append(NSAttributedString(string: "\(port)", attributes: attrs))
+            if i < pinned.count - 1 {
+                result.append(NSAttributedString(string: " ", attributes: attrs))
+            }
+        }
+        button.attributedTitle = result
     }
 
     private func observeUpdateChecker() {
@@ -100,10 +141,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
         let pop = NSPopover()
         pop.behavior = .transient
-        pop.contentSize = NSSize(width: 360, height: 480)
+        pop.contentSize = NSSize(width: 420, height: 520)
         let rootView = AppDelegateMenuBarView(
             viewModel: host.viewModel,
-            privilege: host.privilege
+            privilege: host.privilege,
+            settings: host.settings
         )
         pop.contentViewController = NSHostingController(rootView: rootView)
         popover = pop

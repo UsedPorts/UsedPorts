@@ -4,6 +4,7 @@ struct PortListView: View {
     @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var privilege: PrivilegeManager
     @ObservedObject var toasts: ToastCenter
+    @ObservedObject var settings: AppSettings
 
     var body: some View {
         ToastHost(center: toasts) {
@@ -12,7 +13,7 @@ struct PortListView: View {
                 Divider()
                 PortListTable(viewModel: viewModel)
                 Divider()
-                DetailPaneView(viewModel: viewModel, privilege: privilege, toasts: toasts)
+                DetailPaneView(viewModel: viewModel, privilege: privilege, toasts: toasts, settings: settings)
             }
             .task {
                 viewModel.bootstrapIfNeeded()

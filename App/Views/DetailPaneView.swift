@@ -5,6 +5,7 @@ struct DetailPaneView: View {
     @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var privilege: PrivilegeManager
     @ObservedObject var toasts: ToastCenter
+    @ObservedObject var settings: AppSettings
     @State private var augmented: PortEntry? = nil
     @State private var augmenting = false
     @State private var killConfirm: KillIntent? = nil
@@ -64,6 +65,7 @@ struct DetailPaneView: View {
                     if let p = e.executablePath { RowActions.revealInFinder(path: p) }
                 }
                 .disabled(e.executablePath == nil)
+                pinButton(for: e)
                 Spacer()
                 Button("Kill") {
                     killConfirm = KillIntent(pid: e.pid, label: e.processName, signal: .term)
@@ -74,6 +76,17 @@ struct DetailPaneView: View {
                 }
                 .disabled(RowActions.isProtected(pid: e.pid))
             }
+        }
+    }
+
+    @ViewBuilder
+    private func pinButton(for e: PortEntry) -> some View {
+        let pinned = settings.pinnedPorts.contains(e.port)
+        Button {
+            settings.togglePin(port: e.port)
+        } label: {
+            Label(pinned ? "Unpin from Menu Bar" : "Pin to Menu Bar",
+                  systemImage: pinned ? "pin.slash" : "pin")
         }
     }
 

@@ -9,7 +9,8 @@ struct UsedPortsApp: App {
             PortListView(
                 viewModel: appDelegate.host.viewModel,
                 privilege: appDelegate.host.privilege,
-                toasts: appDelegate.host.toasts
+                toasts: appDelegate.host.toasts,
+                settings: appDelegate.host.settings
             )
             .frame(minWidth: 900, minHeight: 500)
         }

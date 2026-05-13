@@ -34,6 +34,23 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    /// Port numbers to display as status text next to the menu bar icon. Sorting is applied at display time.
+    @Published public var pinnedPorts: Set<UInt16> {
+        didSet {
+            guard oldValue != pinnedPorts else { return }
+            let arr = Array(pinnedPorts).sorted().map { Int($0) }
+            UserDefaults.standard.set(arr, forKey: Self.pinnedPortsKey)
+        }
+    }
+
+    public func togglePin(port: UInt16) {
+        if pinnedPorts.contains(port) {
+            pinnedPorts.remove(port)
+        } else {
+            pinnedPorts.insert(port)
+        }
+    }
+
     public init() {
         if UserDefaults.standard.object(forKey: Self.showMenuBarKey) == nil {
             self.showMenuBar = true

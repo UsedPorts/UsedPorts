@@ -2,6 +2,19 @@
 
 A SwiftUI macOS app that lists and manages TCP/UDP ports in use on your system.
 
+## Install
+
+### Homebrew (recommended)
+```sh
+brew tap UsedPorts/tap
+brew install --cask usedports
+```
+
+### Manual download
+Grab the latest `.zip` from the [Releases](https://github.com/UsedPorts/UsedPorts/releases) page, unzip, and move `UsedPorts.app` to `/Applications`.
+
+On first launch, if Gatekeeper blocks the app, right-click → "Open" once to allow it.
+
 ## Build
 
 Requirements:

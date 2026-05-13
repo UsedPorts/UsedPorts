@@ -15,13 +15,28 @@ public final class PortListViewModel: ObservableObject {
     private var streamTask: Task<Void, Never>?
     private var currentBaseInterval: TimeInterval = 3.0
 
-    public init(scanner: PortScanner, toasts: ToastCenter? = nil) {
+    private var augCache: [Int32: PortEntry] = [:]
+    private var augTask: Task<Void, Never>?
+    private let augmenter: ProcessAugmenting
+
+    public init(scanner: PortScanner, toasts: ToastCenter? = nil, augmenter: ProcessAugmenting = ProcessAugmenter()) {
         self.scanner = scanner
         self.toasts = toasts
+        self.augmenter = augmenter
     }
 
     public var visibleEntries: [PortEntry] {
-        Self.apply(sort: sort, filter: filter, to: rawEntries)
+        let merged = rawEntries.map { e -> PortEntry in
+            if let cached = augCache[e.pid] {
+                var out = e
+                out.executablePath = cached.executablePath
+                out.cwd = cached.cwd
+                out.startTime = cached.startTime
+                return out
+            }
+            return e
+        }
+        return Self.apply(sort: sort, filter: filter, to: merged)
     }
 
     public nonisolated static func apply(sort: SortSpec, filter: FilterState, to entries: [PortEntry]) -> [PortEntry] {
@@ -112,6 +127,39 @@ public final class PortListViewModel: ObservableObject {
         if was != visible, streamTask != nil {
             startStream(interval: currentBaseInterval)
         }
+        if !visible {
+            augTask?.cancel()
+            augTask = nil
+        } else {
+            startAugmentation()
+        }
+    }
+
+    private func startAugmentation() {
+        augTask?.cancel()
+        let entries = rawEntries
+        augTask = Task { [weak self] in
+            guard let self else { return }
+            for entry in entries {
+                if Task.isCancelled { return }
+                let alreadyCached = await self.hasCache(for: entry.pid)
+                if alreadyCached { continue }
+                let aug = await self.augmenter.augment(entry)
+                if Task.isCancelled { return }
+                await self.storeAug(pid: entry.pid, entry: aug)
+            }
+        }
+    }
+
+    private func hasCache(for pid: Int32) -> Bool {
+        return augCache[pid] != nil
+    }
+
+    private func storeAug(pid: Int32, entry: PortEntry) {
+        augCache[pid] = entry
+        // Trigger a UI refresh by re-emitting rawEntries (publisher).
+        let snapshot = rawEntries
+        rawEntries = snapshot
     }
 
     private func effectiveInterval(base: TimeInterval) -> TimeInterval {
@@ -124,6 +172,12 @@ public final class PortListViewModel: ObservableObject {
         if let sel = prevSelected, !batch.contains(where: { $0.id == sel }) {
             selection = nil
             toasts?.showToast("선택했던 프로세스가 종료되었습니다")
+        }
+        // Prune cache entries whose PIDs no longer exist.
+        let livePids = Set(batch.map { $0.pid })
+        augCache = augCache.filter { livePids.contains($0.key) }
+        if windowVisible {
+            startAugmentation()
         }
     }
 

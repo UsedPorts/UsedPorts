@@ -10,8 +10,7 @@ struct PortListView: View {
             Divider()
             PortListTable(viewModel: viewModel)
             Divider()
-            // DetailPane은 Task 16에서. 자리표시자.
-            placeholderDetail
+            DetailPaneView(viewModel: viewModel, privilege: privilege)
         }
         .task { viewModel.startStream() }
         .onDisappear { Task { await viewModel.stopStream() } }
@@ -46,10 +45,4 @@ struct PortListView: View {
         .padding(8)
     }
 
-    private var placeholderDetail: some View {
-        Text(viewModel.selection.map { "Selected: \($0)" } ?? "Select a row")
-            .foregroundStyle(.secondary)
-            .padding(8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
 }

@@ -118,13 +118,16 @@ public final class PortListViewModel: ObservableObject {
             if sel.isEmpty && t.isEmpty { return true }
             return false
         case (.started, .timeRange(let from, let to)):
-            guard let st = e.startTime else { return from == nil && to == nil }
+            if from == nil && to == nil { return true }
+            // Rows whose startTime has not yet been populated by ProcessAugmenter are passed through conservatively.
+            guard let st = e.startTime else { return true }
             if let from, st < from { return false }
             if let to, st > to { return false }
             return true
         case (.started, .timeSpec(let spec)):
             let (from, to) = spec.toRange()
-            guard let st = e.startTime else { return from == nil && to == nil }
+            if from == nil && to == nil { return true }
+            guard let st = e.startTime else { return true }
             if let from, st < from { return false }
             if let to, st > to { return false }
             return true

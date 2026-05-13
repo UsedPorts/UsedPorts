@@ -78,23 +78,29 @@ struct PortListTable: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 ForEach(PortColumn.allCases, id: \.self) { col in
+                    let isActive = (viewModel.filter.byColumn[col]?.isEmpty == false)
                     Button {
                         openColumn = col
                     } label: {
-                        HStack(spacing: 2) {
-                            Image(systemName: "line.3.horizontal.decrease.circle").font(.caption2)
-                            Text(label(col)).font(.caption)
-                            if viewModel.filter.byColumn[col]?.isEmpty == false {
-                                Image(systemName: "line.3.horizontal.decrease.circle.fill")
-                                    .foregroundStyle(.tint)
-                                    .font(.caption2)
+                        HStack(spacing: 4) {
+                            Image(systemName: "line.3.horizontal.decrease").font(.caption2)
+                            Text(label(col))
+                                .font(.caption)
+                                .fontWeight(isActive ? .semibold : .regular)
+                            if isActive {
+                                Circle()
+                                    .fill(Color.accentColor)
+                                    .frame(width: 5, height: 5)
                             }
                         }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(isActive ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.1))
+                        .foregroundStyle(isActive ? Color.accentColor : Color.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
-                    .buttonStyle(.bordered)
-                    .help("필터: \(label(col))")
+                    .buttonStyle(.plain)
+                    .help("필터: \(label(col))\(isActive ? " (활성)" : "")")
                     .popover(isPresented: Binding(
                         get: { openColumn == col },
                         set: { if !$0 { openColumn = nil } }

@@ -202,11 +202,10 @@ public final class PortListViewModel: ObservableObject {
             guard let self else { return }
             for entry in entries {
                 if Task.isCancelled { return }
-                let alreadyCached = await self.hasCache(for: entry.pid)
-                if alreadyCached { continue }
+                if self.hasCache(for: entry.pid) { continue }
                 let aug = await self.augmenter.augment(entry)
                 if Task.isCancelled { return }
-                await self.storeAug(pid: entry.pid, entry: aug)
+                self.storeAug(pid: entry.pid, entry: aug)
             }
         }
     }

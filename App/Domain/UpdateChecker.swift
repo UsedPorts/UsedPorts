@@ -6,7 +6,7 @@ import AppKit
 /// No automatic installation — the user downloads manually from the Release page or runs brew upgrade.
 @MainActor
 public final class UpdateChecker: ObservableObject {
-    private static let owner = "REPLACE_ME_OWNER"   // 실제 배포 시 GitHub username/org로 변경
+    private static let owner = "UsedPorts"
     private static let repo = "used-ports"
     private static let autoCheckKey = "settings.autoCheckUpdates"
     private static let lastCheckKey = "settings.lastUpdateCheck"

@@ -25,6 +25,26 @@ final class NumberSpecTests: XCTestCase {
         XCTAssertFalse(s.matches(9000))
     }
 
+    func test_parse_tildeRange() {
+        let s = NumberSpec.parse("1000~2000")
+        XCTAssertEqual(s.ranges.count, 1)
+        XCTAssertTrue(s.matches(1500))
+        XCTAssertTrue(s.matches(1000))
+        XCTAssertTrue(s.matches(2000))
+        XCTAssertFalse(s.matches(2001))
+        XCTAssertFalse(s.matches(999))
+    }
+
+    func test_parse_mixedDashTilde() {
+        let s = NumberSpec.parse("100-200, 3000~4000, 5000")
+        XCTAssertEqual(s.exact, [5000])
+        XCTAssertEqual(s.ranges.count, 2)
+        XCTAssertTrue(s.matches(150))
+        XCTAssertTrue(s.matches(3500))
+        XCTAssertTrue(s.matches(5000))
+        XCTAssertFalse(s.matches(2500))
+    }
+
     func test_parse_invalidTokensIgnored() {
         let s = NumberSpec.parse("abc, 3000, ,-, 100-50")
         XCTAssertEqual(s.exact, [3000])

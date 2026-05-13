@@ -125,9 +125,11 @@ public struct NumberSpec: Hashable, Codable {
         var ranges: [ClosedRange<Int>] = []
         let tokens = text.split(whereSeparator: { $0 == "," || $0.isWhitespace })
         for token in tokens {
-            if let dash = token.firstIndex(of: "-") {
-                let lhs = String(token[..<dash])
-                let rhs = String(token[token.index(after: dash)...])
+            // 한국 사용자 관습 등으로 `~`도 범위 구분자로 허용.
+            let sep = token.firstIndex(of: "-") ?? token.firstIndex(of: "~")
+            if let sep {
+                let lhs = String(token[..<sep])
+                let rhs = String(token[token.index(after: sep)...])
                 if let a = Int(lhs), let b = Int(rhs), a <= b {
                     ranges.append(a...b)
                 }

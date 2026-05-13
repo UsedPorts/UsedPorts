@@ -8,8 +8,8 @@ public final class AppSettings: ObservableObject {
     private static let appLanguageKey = "settings.appLanguage"
     private static let pinnedPortsKey = "settings.pinnedPorts"
 
-    /// 메뉴바에 NSStatusItem 표시 여부. 변경 시 UserDefaults에 영속화되고
-    /// AppDelegate가 이 publisher를 구독하여 statusItem.isVisible을 갱신한다.
+    /// Whether the NSStatusItem is shown in the menu bar. Changes are persisted to UserDefaults,
+    /// and AppDelegate subscribes to this publisher to update statusItem.isVisible.
     @Published public var showMenuBar: Bool {
         didSet {
             guard oldValue != showMenuBar else { return }

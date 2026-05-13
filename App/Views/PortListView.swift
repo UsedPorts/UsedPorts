@@ -25,9 +25,21 @@ struct PortListView: View {
 
     private var toolbar: some View {
         HStack {
-            TextField("Search PID, port, process…", text: $viewModel.filter.globalSearch)
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 320)
+            HStack(spacing: 4) {
+                TextField("Search PID, port, process…", text: $viewModel.filter.globalSearch)
+                    .textFieldStyle(.roundedBorder)
+                if !viewModel.filter.globalSearch.isEmpty {
+                    Button {
+                        viewModel.filter.globalSearch = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("검색어 지우기")
+                }
+            }
+            .frame(maxWidth: 320)
             Text("\(viewModel.visibleEntries.count) / \(viewModel.rawEntries.count)")
                 .font(.caption)
                 .foregroundStyle(.secondary)

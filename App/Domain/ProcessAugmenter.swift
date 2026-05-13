@@ -14,9 +14,12 @@ public struct ProcessAugmenter: ProcessAugmenting {
 
     public func augment(_ entry: PortEntry) async -> PortEntry {
         var e = entry
-        e.executablePath = await fetchExecutable(pid: entry.pid)
-        e.startTime = await fetchStartTime(pid: entry.pid)
-        e.cwd = await fetchCwd(pid: entry.pid)
+        async let execPath = fetchExecutable(pid: entry.pid)
+        async let start = fetchStartTime(pid: entry.pid)
+        async let cwd = fetchCwd(pid: entry.pid)
+        e.executablePath = await execPath
+        e.startTime = await start
+        e.cwd = await cwd
         return e
     }
 

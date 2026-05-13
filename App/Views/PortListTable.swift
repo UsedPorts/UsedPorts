@@ -10,29 +10,7 @@ struct PortListTable: View {
     var body: some View {
         VStack(spacing: 0) {
             columnChips
-            Table(viewModel.visibleEntries, selection: $viewModel.selection, sortOrder: $sortOrder) {
-                TableColumn("PID", value: \PortEntry.pid) { e in Text("\(e.pid)") }
-                    .width(min: 60, ideal: 70)
-                TableColumn("Port", value: \PortEntry.port) { e in Text("\(e.port)") }
-                    .width(min: 60, ideal: 70)
-                TableColumn("Proto", value: \PortEntry.proto.rawValue) { e in Text(e.proto.rawValue) }
-                    .width(min: 50, ideal: 60)
-                TableColumn("Process", value: \PortEntry.processName) { e in Text(e.processName) }
-                    .width(min: 100, ideal: 160)
-                TableColumn("Address", value: \PortEntry.localAddress) { e in Text(e.localAddress) }
-                    .width(min: 100, ideal: 140)
-                TableColumn("State", value: \PortEntry.stateForSort) { e in Text(e.state ?? "—") }
-                    .width(min: 80, ideal: 100)
-                TableColumn("User", value: \PortEntry.user) { e in Text(e.user) }
-                    .width(min: 80, ideal: 100)
-                TableColumn("Started", value: \PortEntry.startedForSort) { (e: PortEntry) -> Text in
-                    if let st = e.startTime {
-                        return Text(st, format: .dateTime.hour().minute().day().month())
-                    }
-                    return Text("—")
-                }
-                .width(min: 90, ideal: 110)
-            }
+            tableView
             .onChange(of: sortOrder) { _, new in
                 if let first = new.first {
                     viewModel.sort = SortSpec.fromComparator(first)
@@ -48,6 +26,50 @@ struct PortListTable: View {
             }
             .onAppear {
                 sortOrder = [viewModel.sort.toComparator()]
+            }
+        }
+    }
+
+    private var tableView: some View {
+        Table(viewModel.visibleEntries,
+              selection: $viewModel.selection,
+              sortOrder: $sortOrder,
+              columnCustomization: $viewModel.columnCustomization) {
+            TableColumn("PID", value: \PortEntry.pid) { e in Text("\(e.pid)") }
+                .width(min: 60, ideal: 70)
+                .customizationID("pid")
+            TableColumn("Port", value: \PortEntry.port) { e in Text("\(e.port)") }
+                .width(min: 60, ideal: 70)
+                .customizationID("port")
+            TableColumn("Proto", value: \PortEntry.proto.rawValue) { e in Text(e.proto.rawValue) }
+                .width(min: 50, ideal: 60)
+                .customizationID("proto")
+            TableColumn("Process", value: \PortEntry.processName) { e in Text(e.processName) }
+                .width(min: 100, ideal: 160)
+                .customizationID("process")
+            TableColumn("Address", value: \PortEntry.localAddress) { e in Text(e.localAddress) }
+                .width(min: 100, ideal: 140)
+                .customizationID("address")
+            TableColumn("State", value: \PortEntry.stateForSort) { e in Text(e.state ?? "—") }
+                .width(min: 80, ideal: 100)
+                .customizationID("state")
+            TableColumn("User", value: \PortEntry.user) { e in Text(e.user) }
+                .width(min: 80, ideal: 100)
+                .customizationID("user")
+            TableColumn("Started", value: \PortEntry.startedForSort) { (e: PortEntry) -> Text in
+                if let st = e.startTime {
+                    return Text(st, format: .dateTime.hour().minute().day().month())
+                }
+                return Text("—")
+            }
+            .width(min: 90, ideal: 110)
+            .customizationID("started")
+        }
+        .task {
+            // Periodically persist column customization changes (reorder/hide).
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                viewModel.persistCustomization()
             }
         }
     }

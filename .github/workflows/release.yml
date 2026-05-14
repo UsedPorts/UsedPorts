@@ -29,28 +29,128 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Build app
+      - name: Build app + DMG
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: ./scripts/build-release.sh "$VERSION"
+        run: |
+          set -euo pipefail
+          xcodegen generate
+          BUILD_DIR="build/release"
+          rm -rf "$BUILD_DIR"
+          xcodebuild \
+            -project UsedPorts.xcodeproj \
+            -scheme UsedPorts \
+            -configuration Release \
+            -derivedDataPath "$BUILD_DIR" \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+          APP_SRC="$BUILD_DIR/Build/Products/Release/UsedPorts.app"
+          [[ -d "$APP_SRC" ]] || { echo "build did not produce $APP_SRC" >&2; exit 1; }
+
+          codesign --force --deep --sign - --options runtime "$APP_SRC"
+          codesign --verify --deep --strict "$APP_SRC"
+
+          mkdir -p dist
+          DMG="dist/UsedPorts-${VERSION}.dmg"
+          rm -f "$DMG"
+          STAGE="$(mktemp -d)"
+          cp -R "$APP_SRC" "$STAGE/"
+          ln -s /Applications "$STAGE/Applications"
+          hdiutil create \
+            -volname "UsedPorts ${VERSION}" \
+            -srcfolder "$STAGE" \
+            -ov \
+            -format UDZO \
+            "$DMG" >/dev/null
+          rm -rf "$STAGE"
 
       - name: Compute SHA256
         id: hash
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          ZIP="dist/UsedPorts-${VERSION}.zip"
-          SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
-          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
-          echo "zip_path=$ZIP" >> "$GITHUB_OUTPUT"
-          echo "zip_name=UsedPorts-${VERSION}.zip" >> "$GITHUB_OUTPUT"
+          DMG="dist/UsedPorts-${VERSION}.dmg"
+          DMG_SHA="$(shasum -a 256 "$DMG" | awk '{print $1}')"
+          echo "dmg_path=$DMG" >> "$GITHUB_OUTPUT"
+          echo "dmg_name=UsedPorts-${VERSION}.dmg" >> "$GITHUB_OUTPUT"
+          echo "dmg_sha=$DMG_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Upload release asset
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
-          ZIP_PATH: ${{ steps.hash.outputs.zip_path }}
-        run: gh release upload "$TAG" "$ZIP_PATH" --clobber
+          DMG_PATH: ${{ steps.hash.outputs.dmg_path }}
+        run: gh release upload "$TAG" "$DMG_PATH" --clobber
+
+      - name: Sign update + refresh appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          DMG_NAME: ${{ steps.hash.outputs.dmg_name }}
+          DMG_PATH: ${{ steps.hash.outputs.dmg_path }}
+        if: env.SPARKLE_PRIVATE_KEY != ''
+        run: |
+          set -euo pipefail
+          SPARKLE_VER="2.6.4"
+          curl -sSL -o /tmp/sparkle.tar.xz \
+            "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz"
+          mkdir -p /tmp/sparkle && tar -xJf /tmp/sparkle.tar.xz -C /tmp/sparkle
+          SIGN_UPDATE="/tmp/sparkle/bin/sign_update"
+
+          KEY_FILE="$(mktemp)"
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > "$KEY_FILE"
+          # sign_update prints a fragment: sparkle:edSignature="..." length="..."
+          SIG_FRAGMENT="$("$SIGN_UPDATE" -f "$KEY_FILE" "$DMG_PATH")"
+          rm -f "$KEY_FILE"
+
+          DMG_URL="https://github.com/UsedPorts/UsedPorts/releases/download/${TAG}/${DMG_NAME}"
+          PUBDATE="$(date -u +'%a, %d %b %Y %H:%M:%S +0000')"
+          export SIG_FRAGMENT DMG_URL PUBDATE
+
+          python3 <<'PY'
+          import os, re, pathlib
+          version  = os.environ["VERSION"]
+          tag      = os.environ["TAG"]
+          sig      = os.environ["SIG_FRAGMENT"]
+          dmg_url  = os.environ["DMG_URL"]
+          pubdate  = os.environ["PUBDATE"]
+          item = (
+              "    <item>\n"
+              f"      <title>Version {version}</title>\n"
+              f"      <pubDate>{pubdate}</pubDate>\n"
+              f"      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>\n"
+              f'      <enclosure url="{dmg_url}"\n'
+              f'                 sparkle:version="{version}"\n'
+              f'                 sparkle:shortVersionString="{version}"\n'
+              f"                 {sig}\n"
+              f'                 type="application/x-apple-diskimage" />\n'
+              f'      <description><![CDATA[See <a href="https://github.com/UsedPorts/UsedPorts/releases/tag/{tag}">release notes</a>.]]></description>\n'
+              "    </item>\n"
+          )
+          path = pathlib.Path("appcast.xml")
+          xml = path.read_text(encoding="utf-8")
+          # Idempotent: drop any prior entry for this version.
+          xml = re.sub(
+              r"\s*<item>\s*<title>Version " + re.escape(version) + r"</title>.*?</item>\s*",
+              "\n",
+              xml, flags=re.DOTALL)
+          xml = xml.replace("</channel>", item + "  </channel>")
+          path.write_text(xml, encoding="utf-8")
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add appcast.xml
+          if git diff --cached --quiet; then
+            echo "appcast.xml already up to date"
+          else
+            git commit -m "appcast: usedports ${VERSION}"
+            git push origin HEAD:main
+          fi
 
       - name: Checkout homebrew-tap
         uses: actions/checkout@v4
@@ -64,17 +164,17 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
           TAG: ${{ steps.version.outputs.tag }}
-          SHA256: ${{ steps.hash.outputs.sha256 }}
-          ZIP_NAME: ${{ steps.hash.outputs.zip_name }}
+          DMG_SHA: ${{ steps.hash.outputs.dmg_sha }}
+          DMG_NAME: ${{ steps.hash.outputs.dmg_name }}
         run: |
           mkdir -p Casks
-          ZIP_URL="https://github.com/UsedPorts/UsedPorts/releases/download/${TAG}/${ZIP_NAME}"
+          DMG_URL="https://github.com/UsedPorts/UsedPorts/releases/download/${TAG}/${DMG_NAME}"
           cat > Casks/usedports.rb <<EOF
           cask "usedports" do
             version "${VERSION}"
-            sha256 "${SHA256}"
+            sha256 "${DMG_SHA}"
 
-            url "${ZIP_URL}"
+            url "${DMG_URL}"
             name "UsedPorts"
             desc "View and manage active TCP/UDP ports on macOS"
             homepage "https://github.com/UsedPorts/UsedPorts"

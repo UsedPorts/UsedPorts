@@ -68,6 +68,10 @@ Tests/              — XCTest unit + integration tests
 | Normal | Direct `lsof -nP -iTCP -iUDP -F pcuLnPT` | Current user |
 | sudo | `osascript ... with administrator privileges` launches the `uph` helper; JSONL IPC | root (held while the app is running) |
 
+## Auto-update
+
+The app uses [Sparkle 2.x](https://sparkle-project.org/). Updates are pulled from `appcast.xml` published at the repo root; Settings → Updates lets you toggle auto-checks or run "Check Now".
+
 ## Notes
 
 - App Sandbox is disabled (needs to run external commands and signal other PIDs)

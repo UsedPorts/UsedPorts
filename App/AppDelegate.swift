@@ -69,14 +69,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     func applicationDidFinishLaunching(_ notification: Notification) {
         installStatusItem()
         observeVisibility()
-        observeUpdateChecker()
         observePinnedPorts()
-        Task { [host] in
-            // Auto-check on launch (noop if disabled). Results are surfaced via host.toasts.
-            if host.updater.autoCheckEnabled {
-                await host.updater.checkNow()
-            }
-        }
+        // Sparkle's scheduler handles periodic auto-checks based on the
+        // `automaticallyChecksForUpdates` flag — no explicit call required at launch.
     }
 
     /// Updates the status text next to the menu bar icon (pinned port state) whenever pinnedPorts or rawEntries changes.
@@ -115,16 +110,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             }
         }
         button.attributedTitle = result
-    }
-
-    private func observeUpdateChecker() {
-        // Show a toast banner when a new version is found.
-        Task { [host] in
-            for await _ in host.updater.$isNewAvailable.values where host.updater.isNewAvailable {
-                let v = host.updater.latestVersion ?? "?"
-                host.toasts.showBanner(String(localized: "New version \(v) is available"))
-            }
-        }
     }
 
     // MARK: - Setup

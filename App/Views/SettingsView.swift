@@ -24,10 +24,8 @@ struct SettingsView: View {
             Section("Updates") {
                 Toggle("Automatically check for updates", isOn: $updater.autoCheckEnabled)
                 HStack {
-                    Button("Check Now") {
-                        Task { await updater.checkNow() }
-                    }
-                    .disabled(updater.isChecking)
+                    Button("Check Now") { updater.checkNow() }
+                        .disabled(updater.isChecking || !updater.canCheckNow)
                     Spacer()
                     if let last = updater.lastCheckDate {
                         Text("Last checked: \(last.formatted(date: .abbreviated, time: .shortened))")
@@ -37,13 +35,6 @@ struct SettingsView: View {
                         Text("Not checked yet")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                    }
-                }
-                if updater.isNewAvailable, let v = updater.latestVersion {
-                    HStack {
-                        Text("New version \(v) is available")
-                        Spacer()
-                        Button("View Release") { updater.openReleasePage() }
                     }
                 }
             }

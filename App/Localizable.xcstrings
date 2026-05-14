@@ -120,6 +120,9 @@
         }
       }
     },
+    "Auto-update is not configured for this build." : {
+
+    },
     "Automatically check for updates" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -675,6 +678,7 @@
       }
     },
     "New version %@ is available" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {

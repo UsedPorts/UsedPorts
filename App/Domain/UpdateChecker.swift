@@ -1,93 +1,55 @@
 import Foundation
 import AppKit
+import Sparkle
 
-/// Lightweight update check: fetches the latest tag from the GitHub Releases API
-/// and compares it against the current bundle version. Notifies via callback if a new version is available.
-/// No automatic installation — the user downloads manually from the Release page or runs brew upgrade.
+/// Thin wrapper around Sparkle's `SPUStandardUpdaterController`. Sparkle
+/// handles detection, download, signature verification, and the install
+/// dialog. The view layer only needs the @Published mirrors below.
 @MainActor
-public final class UpdateChecker: ObservableObject {
-    private static let owner = "UsedPorts"
-    private static let repo = "used-ports"
-    private static let autoCheckKey = "settings.autoCheckUpdates"
-    private static let lastCheckKey = "settings.lastUpdateCheck"
+public final class UpdateChecker: NSObject, ObservableObject {
+    private let controller: SPUStandardUpdaterController
 
     @Published public var autoCheckEnabled: Bool {
         didSet {
             guard oldValue != autoCheckEnabled else { return }
-            UserDefaults.standard.set(autoCheckEnabled, forKey: Self.autoCheckKey)
+            controller.updater.automaticallyChecksForUpdates = autoCheckEnabled
         }
     }
     @Published public var lastCheckDate: Date?
-    @Published public var latestVersion: String?
-    @Published public var isNewAvailable: Bool = false
-    @Published public var releaseURL: URL?
     @Published public var isChecking: Bool = false
 
-    public init() {
-        if UserDefaults.standard.object(forKey: Self.autoCheckKey) == nil {
-            self.autoCheckEnabled = true
-        } else {
-            self.autoCheckEnabled = UserDefaults.standard.bool(forKey: Self.autoCheckKey)
-        }
-        self.lastCheckDate = UserDefaults.standard.object(forKey: Self.lastCheckKey) as? Date
+    public override init() {
+        self.controller = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: nil,
+            userDriverDelegate: nil
+        )
+        self.autoCheckEnabled = controller.updater.automaticallyChecksForUpdates
+        self.lastCheckDate = controller.updater.lastUpdateCheckDate
+        super.init()
+    }
+
+    public var canCheckNow: Bool {
+        controller.updater.canCheckForUpdates
     }
 
     public var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
     }
 
-    /// Called explicitly by the user or automatically on boot. Network errors are silently ignored.
-    public func checkNow() async {
+    /// User-driven check. Sparkle presents its own UI; `lastCheckDate` is
+    /// refreshed shortly after Sparkle's sheet closes.
+    public func checkNow() {
         guard !isChecking else { return }
         isChecking = true
-        defer { isChecking = false }
-
-        let urlString = "https://api.github.com/repos/\(Self.owner)/\(Self.repo)/releases/latest"
-        guard let url = URL(string: urlString) else { return }
-
-        var request = URLRequest(url: url)
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 10
-
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return }
-            let decoded = try JSONDecoder().decode(GitHubRelease.self, from: data)
-            let tag = decoded.tagName.trimmingCharacters(in: CharacterSet(charactersIn: "v"))
-            latestVersion = tag
-            releaseURL = URL(string: decoded.htmlURL)
-            isNewAvailable = Self.isNewer(tag, than: currentVersion)
-            lastCheckDate = Date()
-            UserDefaults.standard.set(lastCheckDate, forKey: Self.lastCheckKey)
-        } catch {
-            // Offline or other error — silently ignore.
+        controller.checkForUpdates(nil)
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            await MainActor.run {
+                guard let self else { return }
+                self.lastCheckDate = self.controller.updater.lastUpdateCheckDate
+                self.isChecking = false
+            }
         }
-    }
-
-    public func openReleasePage() {
-        if let url = releaseURL { NSWorkspace.shared.open(url) }
-    }
-
-    /// Simple semantic version comparison. Assumes "1.2.3" format.
-    static func isNewer(_ candidate: String, than current: String) -> Bool {
-        let c = candidate.split(separator: ".").compactMap { Int($0) }
-        let r = current.split(separator: ".").compactMap { Int($0) }
-        for i in 0..<max(c.count, r.count) {
-            let a = i < c.count ? c[i] : 0
-            let b = i < r.count ? r[i] : 0
-            if a > b { return true }
-            if a < b { return false }
-        }
-        return false
-    }
-}
-
-private struct GitHubRelease: Decodable {
-    let tagName: String
-    let htmlURL: String
-
-    enum CodingKeys: String, CodingKey {
-        case tagName = "tag_name"
-        case htmlURL = "html_url"
     }
 }

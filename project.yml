@@ -19,6 +19,10 @@ settings:
     CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED: YES
     STRING_CATALOG_GENERATE_SYMBOLS: YES
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.0"
 targets:
   UsedPorts:
     type: application
@@ -40,6 +44,15 @@ targets:
         LSUIElement: NO
         CFBundleDevelopmentRegion: en
         CFBundleLocalizations: [en, ko]
+        # Sparkle — appcast hosted in repo (raw.githubusercontent.com serves a
+        # plain file). Replace SUPublicEDKey with the public half of an EdDSA
+        # keypair generated via Sparkle's `generate_keys`.
+        SUFeedURL: https://raw.githubusercontent.com/UsedPorts/UsedPorts/main/appcast.xml
+        SUPublicEDKey: UzmLq1EqhTWNyM9ufQ1e7mQLT7P3LO5NMzArt0Wwnzo=
+        SUEnableInstallerLauncherService: YES
+        SUEnableAutomaticChecks: YES
+        SUAutomaticallyUpdate: NO
+        SUScheduledCheckInterval: 86400
     entitlements:
       path: App/UsedPorts.entitlements
       properties: {}
@@ -51,6 +64,7 @@ targets:
       - target: uph
         embed: false
         link: false
+      - package: Sparkle
     postBuildScripts:
       - name: "Copy uph helper into Resources"
         script: |

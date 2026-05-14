@@ -348,26 +348,48 @@ struct KillIntent: Identifiable {
 enum PortEntryFormatter {
     /// Tab-separated table format — paste-friendly for spreadsheets and notes.
     static func tsv(for entries: [PortEntry]) -> String {
-        let header = [
-            "PID", "Port", "Proto", "IP", "Process",
-            "Address", "State", "User", "Started", "Path", "CWD"
-        ].joined(separator: "\t")
-        let rows = entries.map { e in
-            [
-                "\(e.pid)",
-                "\(e.port)",
-                e.proto.rawValue,
-                e.ipFamily?.rawValue ?? "",
-                e.processName,
-                e.localAddress,
-                e.state ?? "",
-                e.user,
-                e.startTime.map { $0.formatted(date: .abbreviated, time: .standard) } ?? "",
-                e.executablePath ?? "",
-                e.cwd ?? "",
-            ].map { $0.replacingOccurrences(of: "\t", with: " ") }
-             .joined(separator: "\t")
+        let header = "PID\tPort\tProto\tIP\tProcess\tAddress\tState\tUser\tStarted\tPath\tCWD"
+        var lines: [String] = [header]
+        for e in entries {
+            lines.append(row(for: e))
         }
-        return ([header] + rows).joined(separator: "\n")
+        return lines.joined(separator: "\n")
+    }
+
+    private static func row(for e: PortEntry) -> String {
+        let pid: String = sanitize("\(e.pid)")
+        let port: String = sanitize("\(e.port)")
+        let proto: String = sanitize(e.proto.rawValue)
+        let family: String = sanitize(e.ipFamily?.rawValue ?? "")
+        let processName: String = sanitize(e.processName)
+        let address: String = sanitize(e.localAddress)
+        let state: String = sanitize(e.state ?? "")
+        let user: String = sanitize(e.user)
+        let started: String = sanitize(formatStarted(e.startTime))
+        let path: String = sanitize(e.executablePath ?? "")
+        let cwd: String = sanitize(e.cwd ?? "")
+
+        var line: String = ""
+        line += pid;          line += "\t"
+        line += port;         line += "\t"
+        line += proto;        line += "\t"
+        line += family;       line += "\t"
+        line += processName;  line += "\t"
+        line += address;      line += "\t"
+        line += state;        line += "\t"
+        line += user;         line += "\t"
+        line += started;      line += "\t"
+        line += path;         line += "\t"
+        line += cwd
+        return line
+    }
+
+    private static func formatStarted(_ date: Date?) -> String {
+        guard let date else { return "" }
+        return date.formatted(date: .abbreviated, time: .standard)
+    }
+
+    private static func sanitize(_ s: String) -> String {
+        return s.replacingOccurrences(of: "\t", with: " ")
     }
 }

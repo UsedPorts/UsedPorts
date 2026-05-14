@@ -38,9 +38,6 @@
         }
       }
     },
-    "%@ rows selected" : {
-
-    },
     "%lld ports" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -233,7 +230,6 @@
       }
     },
     "Copied 1 row" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -724,16 +720,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "권한 부족 — sudo 모드 전환이 필요합니다"
-          }
-        }
-      }
-    },
-    "PID %@ (%@)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "PID %1$@ (%2$@)"
           }
         }
       }

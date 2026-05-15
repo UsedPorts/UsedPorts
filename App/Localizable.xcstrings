@@ -15,6 +15,9 @@
         }
       }
     },
+    "(no matches)" : {
+
+    },
     "(no ports)" : {
       "localizations" : {
         "ko" : {
@@ -62,6 +65,28 @@
     },
     "3000  ·  1000~2000  ·  5000+  ·  ~80" : {
 
+    },
+    "Active" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "활성"
+          }
+        }
+      }
+    },
+    "All" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전체"
+          }
+        }
+      }
     },
     "Already terminated" : {
       "localizations" : {
@@ -119,9 +144,6 @@
           }
         }
       }
-    },
-    "Auto-update is not configured for this build." : {
-
     },
     "Automatically check for updates" : {
       "extractionState" : "stale",
@@ -218,6 +240,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "검색어 지우기"
+          }
+        }
+      }
+    },
+    "Compact menu bar list (port only)" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메뉴바 목록 간단히 표시 (포트만)"
+          }
+        }
+      }
+    },
+    "Group same-process ports in menu bar" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "같은 프로세스 포트는 한 칸에 표시"
           }
         }
       }
@@ -454,6 +497,17 @@
         }
       }
     },
+    "Force Kill" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "강제 종료"
+          }
+        }
+      }
+    },
     "From" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -529,6 +583,17 @@
         }
       }
     },
+    "Inactive" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비활성"
+          }
+        }
+      }
+    },
     "IPC channel setup failed" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -584,12 +649,25 @@
         }
       }
     },
+    "Kill PID %@?" : {
+
+    },
     "Killed PID %lld (%@)" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "PID %lld (%@) 종료됨"
+          }
+        }
+      }
+    },
+    "Killed PID %lld (%@) [-9]" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Killed PID %1$lld (%2$@) [-9]"
           }
         }
       }
@@ -735,6 +813,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "메뉴바에 모두 고정"
+          }
+        }
+      }
+    },
+    "Pin port %lld to menu bar" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트 %lld을(를) 메뉴바에 고정"
           }
         }
       }

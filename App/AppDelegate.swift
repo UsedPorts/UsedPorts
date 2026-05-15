@@ -41,9 +41,13 @@ struct AppDelegateMenuBarView: View {
     @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var privilege: PrivilegeManager
     @ObservedObject var settings: AppSettings
+    @ObservedObject var toasts: ToastCenter
 
     var body: some View {
-        MenuBarContent(viewModel: viewModel, privilege: privilege, settings: settings)
+        MenuBarContent(viewModel: viewModel,
+                       privilege: privilege,
+                       settings: settings,
+                       toasts: toasts)
     }
 }
 
@@ -95,18 +99,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             return
         }
         let active = Set(host.viewModel.rawEntries.map { $0.port })
+        let portFont = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        let dotFont = NSFont.systemFont(ofSize: 7, weight: .bold)
         let result = NSMutableAttributedString()
         result.append(NSAttributedString(string: "  "))
         for (i, port) in pinned.enumerated() {
             let isActive = active.contains(port)
-            let color: NSColor = isActive ? .controlAccentColor : .tertiaryLabelColor
-            let attrs: [NSAttributedString.Key: Any] = [
-                .foregroundColor: color,
-                .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium),
+            let dotColor: NSColor = isActive ? .systemGreen : .tertiaryLabelColor
+            let textColor: NSColor = isActive ? .labelColor : .tertiaryLabelColor
+            let dotAttrs: [NSAttributedString.Key: Any] = [
+                .foregroundColor: dotColor,
+                .font: dotFont,
+                .baselineOffset: 2,
             ]
-            result.append(NSAttributedString(string: "\(port)", attributes: attrs))
+            let textAttrs: [NSAttributedString.Key: Any] = [
+                .foregroundColor: textColor,
+                .font: portFont,
+            ]
+            result.append(NSAttributedString(string: isActive ? "● " : "○ ", attributes: dotAttrs))
+            result.append(NSAttributedString(string: "\(port)", attributes: textAttrs))
             if i < pinned.count - 1 {
-                result.append(NSAttributedString(string: " ", attributes: attrs))
+                result.append(NSAttributedString(string: "  ", attributes: textAttrs))
             }
         }
         button.attributedTitle = result
@@ -130,7 +143,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         let rootView = AppDelegateMenuBarView(
             viewModel: host.viewModel,
             privilege: host.privilege,
-            settings: host.settings
+            settings: host.settings,
+            toasts: host.toasts
         )
         pop.contentViewController = NSHostingController(rootView: rootView)
         popover = pop

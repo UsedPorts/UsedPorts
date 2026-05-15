@@ -7,6 +7,8 @@ public final class AppSettings: ObservableObject {
     private static let showMenuBarKey = "settings.showMenuBar"
     private static let appLanguageKey = "settings.appLanguage"
     private static let pinnedPortsKey = "settings.pinnedPorts"
+    private static let menuBarCompactKey = "settings.menuBarCompact"
+    private static let menuBarGroupSamePidKey = "settings.menuBarGroupSamePid"
 
     /// Whether the NSStatusItem is shown in the menu bar. Changes are persisted to UserDefaults,
     /// and AppDelegate subscribes to this publisher to update statusItem.isVisible.
@@ -34,6 +36,23 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    /// When true, the menu bar list hides the process name to show a denser port-only view.
+    @Published public var menuBarCompact: Bool {
+        didSet {
+            guard oldValue != menuBarCompact else { return }
+            UserDefaults.standard.set(menuBarCompact, forKey: Self.menuBarCompactKey)
+        }
+    }
+
+    /// When true, adjacent rows sharing a PID suppress the repeated process name,
+    /// producing a "one cell, two lines" look for same-process port groups.
+    @Published public var menuBarGroupSamePid: Bool {
+        didSet {
+            guard oldValue != menuBarGroupSamePid else { return }
+            UserDefaults.standard.set(menuBarGroupSamePid, forKey: Self.menuBarGroupSamePidKey)
+        }
+    }
+
     /// Port numbers to display as status text next to the menu bar icon. Sorting is applied at display time.
     @Published public var pinnedPorts: Set<UInt16> {
         didSet {
@@ -58,6 +77,12 @@ public final class AppSettings: ObservableObject {
             self.showMenuBar = UserDefaults.standard.bool(forKey: Self.showMenuBarKey)
         }
         self.appLanguage = (UserDefaults.standard.string(forKey: Self.appLanguageKey) ?? "system")
+        self.menuBarCompact = UserDefaults.standard.bool(forKey: Self.menuBarCompactKey)
+        if UserDefaults.standard.object(forKey: Self.menuBarGroupSamePidKey) == nil {
+            self.menuBarGroupSamePid = true
+        } else {
+            self.menuBarGroupSamePid = UserDefaults.standard.bool(forKey: Self.menuBarGroupSamePidKey)
+        }
         if let arr = UserDefaults.standard.array(forKey: Self.pinnedPortsKey) as? [Int] {
             self.pinnedPorts = Set(arr.compactMap { UInt16(exactly: $0) })
         } else {

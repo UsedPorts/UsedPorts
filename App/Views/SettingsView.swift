@@ -10,6 +10,8 @@ struct SettingsView: View {
             Section("General") {
                 Toggle("Launch at Login", isOn: $settings.launchAtLogin)
                 Toggle("Show in Menu Bar", isOn: $settings.showMenuBar)
+                Toggle("Compact menu bar list (port only)", isOn: $settings.menuBarCompact)
+                Toggle("Group same-process ports in menu bar", isOn: $settings.menuBarGroupSamePid)
             }
             Section("Language") {
                 Picker("Language", selection: $settings.appLanguage) {

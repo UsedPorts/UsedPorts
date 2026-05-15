@@ -5,12 +5,20 @@ struct MenuBarContent: View {
     @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var privilege: PrivilegeManager
     @ObservedObject var settings: AppSettings
+    @ObservedObject var toasts: ToastCenter
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
+
+    @State private var query: String = ""
+    @State private var confirmKillRowId: String? = nil
+
+    private let killer = KillSupervisor()
 
     var body: some View {
         VStack(spacing: 0) {
             header
+            Divider()
+            searchBar
             Divider()
             content
             Divider()
@@ -18,7 +26,7 @@ struct MenuBarContent: View {
             Divider()
             footer
         }
-        .frame(width: 400)
+        .frame(width: 420)
         .task { viewModel.bootstrapIfNeeded() }
     }
 
@@ -54,38 +62,110 @@ struct MenuBarContent: View {
         return "\(total) ports · \(listening) listening"
     }
 
-    // MARK: - Content (pinned + top)
+    // MARK: - Search
+
+    private var searchBar: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+            TextField(String(localized: "Search PID, port, process…"), text: $query)
+                .textFieldStyle(.plain)
+                .font(.callout)
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .help(String(localized: "Clear search"))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+    }
+
+    // MARK: - Content (fixed-height area keeps footer position stable)
 
     private var content: some View {
         ScrollView {
             VStack(spacing: 0) {
-                if !settings.pinnedPorts.isEmpty {
-                    sectionLabel(String(localized: "Pinned"))
-                    ForEach(pinnedRows) { row in
-                        PortRow(row: row,
-                                isPinned: true,
-                                onTogglePin: { settings.togglePin(port: row.port) })
-                    }
-                    Divider().padding(.vertical, 4)
-                }
-                sectionLabel(String(localized: "Recent"))
-                if recentRows.isEmpty {
-                    Text("(no ports)")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                        .padding(.vertical, 12)
+                if query.isEmpty {
+                    defaultList
                 } else {
-                    ForEach(recentRows) { row in
-                        PortRow(row: row,
-                                isPinned: settings.pinnedPorts.contains(row.port),
-                                onTogglePin: { settings.togglePin(port: row.port) })
-                    }
+                    searchList
                 }
             }
             .padding(.horizontal, 4)
             .padding(.bottom, 6)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
-        .frame(maxHeight: 320)
+        .frame(height: 320)
+    }
+
+    @ViewBuilder
+    private var defaultList: some View {
+        if !settings.pinnedPorts.isEmpty {
+            sectionLabel(String(localized: "Pinned"))
+            ForEach(pinnedRows) { row in
+                rowView(row)
+            }
+            Divider().padding(.vertical, 4)
+        }
+        sectionLabel(String(localized: "All"))
+        if recentRows.isEmpty {
+            Text("(no ports)")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+                .padding(.vertical, 12)
+        } else {
+            ForEach(recentRows) { row in
+                rowView(row)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var searchList: some View {
+        if let portToPin = pinnablePortFromQuery {
+            pinSuggestionRow(port: portToPin)
+            if !searchRows.isEmpty {
+                Divider().padding(.vertical, 4)
+            }
+        }
+        if !searchRows.isEmpty {
+            sectionLabel(String(localized: "Matches"))
+            ForEach(searchRows) { row in
+                rowView(row)
+            }
+        } else if pinnablePortFromQuery == nil {
+            Text("(no matches)")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+                .padding(.vertical, 12)
+        }
+    }
+
+    @ViewBuilder
+    private func rowView(_ row: PortRowData) -> some View {
+        let confirming = (confirmKillRowId == row.id) && row.isActive
+        PortRow(
+            row: row,
+            isPinned: settings.pinnedPorts.contains(row.port),
+            isConfirming: confirming,
+            onTogglePin: { settings.togglePin(port: row.port) },
+            onKillRequest: { confirmKillRowId = row.id }
+        )
+        if confirming {
+            KillConfirmBar(
+                pid: row.pid,
+                onCancel: { confirmKillRowId = nil },
+                onKill: { performKill(row: row, force: false) },
+                onForceKill: { performKill(row: row, force: true) }
+            )
+        }
     }
 
     private func sectionLabel(_ text: String) -> some View {
@@ -101,7 +181,8 @@ struct MenuBarContent: View {
         }
     }
 
-    /// Row data for pinned ports. Uses the actual PortEntry if active, otherwise a placeholder row.
+    // MARK: - Row data
+
     private var pinnedRows: [PortRowData] {
         let map = Dictionary(grouping: viewModel.rawEntries, by: { $0.port })
         return settings.pinnedPorts.sorted().map { port in
@@ -115,8 +196,132 @@ struct MenuBarContent: View {
 
     private var recentRows: [PortRowData] {
         let pinnedSet = settings.pinnedPorts
-        return viewModel.visibleEntries.prefix(12).filter { !pinnedSet.contains($0.port) }.map {
-            PortRowData(id: $0.id, port: $0.port, proto: $0.proto.rawValue, processName: $0.processName, pid: Int($0.pid), state: $0.state, isActive: true)
+        let rows = viewModel.visibleEntries.filter { !pinnedSet.contains($0.port) }
+            .sorted { $0.port < $1.port }
+            .map {
+                PortRowData(id: $0.id, port: $0.port, proto: $0.proto.rawValue, processName: $0.processName, pid: Int($0.pid), state: $0.state, isActive: true)
+            }
+        return annotateGrouping(rows)
+    }
+
+    private var searchRows: [PortRowData] {
+        var state = FilterState()
+        state.globalSearch = query
+        let rows = viewModel.rawEntries
+            .filter { PortListViewModel.matches(state, $0) }
+            .sorted { $0.port < $1.port }
+            .map {
+                PortRowData(id: $0.id, port: $0.port, proto: $0.proto.rawValue,
+                            processName: $0.processName, pid: Int($0.pid),
+                            state: $0.state, isActive: true)
+            }
+        return annotateGrouping(rows)
+    }
+
+    /// Hide the process name on rows where the same PID just appeared above (or in compact mode).
+    /// This produces the "two-line cell" look for same-PID groups: ports stack, name shown once.
+    private func annotateGrouping(_ rows: [PortRowData]) -> [PortRowData] {
+        var result: [PortRowData] = []
+        result.reserveCapacity(rows.count)
+        var prevPid: Int? = nil
+        for row in rows {
+            var r = row
+            if settings.menuBarCompact {
+                r.showProcess = false
+            } else if settings.menuBarGroupSamePid, let p = prevPid, p == row.pid, row.pid > 0 {
+                r.showProcess = false
+            }
+            result.append(r)
+            prevPid = row.pid
+        }
+        return result
+    }
+
+    /// When the query is purely a port number (1..65535) and that port isn't already pinned,
+    /// expose a one-tap action to pin it — useful to watch arbitrary ports for activity.
+    private var pinnablePortFromQuery: UInt16? {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, let n = Int(trimmed), (1...65535).contains(n) else { return nil }
+        let port = UInt16(n)
+        if settings.pinnedPorts.contains(port) { return nil }
+        return port
+    }
+
+    @ViewBuilder
+    private func pinSuggestionRow(port: UInt16) -> some View {
+        let active = viewModel.rawEntries.contains(where: { $0.port == port })
+        Button {
+            settings.togglePin(port: port)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "pin.fill")
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 32)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(String(format: NSLocalizedString("Pin port %lld to menu bar", comment: ""), Int(port)))
+                        .foregroundStyle(.primary)
+                    Text(active ? String(localized: "Currently active") : String(localized: "Currently inactive"))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Kill flow (inline confirmation, mirrors DetailPaneView's escalation)
+
+    private func performKill(row: PortRowData, force: Bool) {
+        let pid = Int32(row.pid)
+        let label = row.processName
+        confirmKillRowId = nil
+        guard pid > 0, !RowActions.isProtected(pid: pid) else { return }
+        let signal: KillSignal = force ? .kill : .term
+        Task {
+            let outcome: KillOutcome
+            if privilege.isSudoActive {
+                outcome = await privilege.sudoKill(pid: pid, sig: signal.rawValue)
+            } else {
+                outcome = await killer.kill(pid: pid, signal: signal)
+            }
+            let msg: String
+            switch outcome {
+            case .terminated:
+                let fmt = force
+                    ? NSLocalizedString("Killed PID %lld (%@) [-9]", comment: "")
+                    : NSLocalizedString("Killed PID %lld (%@)", comment: "")
+                msg = String(format: fmt, Int(pid), label)
+            case .alreadyDead:
+                msg = NSLocalizedString("Already terminated", comment: "")
+            case .noPermission:
+                msg = NSLocalizedString("Permission denied — switch to sudo mode", comment: "")
+            case .stillAlive:
+                if force {
+                    msg = NSLocalizedString("Not responding (Kill -9 failed)", comment: "")
+                } else {
+                    let escalated: KillOutcome
+                    if privilege.isSudoActive {
+                        escalated = await privilege.sudoKill(pid: pid, sig: KillSignal.kill.rawValue)
+                    } else {
+                        escalated = await killer.kill(pid: pid, signal: .kill)
+                    }
+                    if case .terminated = escalated {
+                        let fmt = NSLocalizedString("Killed PID %lld (%@) [-9]", comment: "")
+                        msg = String(format: fmt, Int(pid), label)
+                    } else {
+                        msg = NSLocalizedString("Not responding (Kill -9 failed)", comment: "")
+                    }
+                }
+            case .launchError(let m):
+                let fmt = NSLocalizedString("Error: %@", comment: "")
+                msg = String(format: fmt, m)
+            }
+            toasts.showToast(msg)
+            try? await viewModel.refreshOnce()
         }
     }
 
@@ -163,7 +368,7 @@ struct MenuBarContent: View {
             }
             .controlSize(.small)
             .keyboardShortcut("r")
-            .help("Refresh")
+            .help(String(localized: "Refresh"))
             Spacer()
             Button {
                 openSettings()
@@ -173,7 +378,7 @@ struct MenuBarContent: View {
             }
             .controlSize(.small)
             .keyboardShortcut(",")
-            .help("Settings…")
+            .help(String(localized: "Settings…"))
             Button {
                 NSApp.terminate(nil)
             } label: {
@@ -182,7 +387,7 @@ struct MenuBarContent: View {
             }
             .controlSize(.small)
             .keyboardShortcut("q")
-            .help("Quit")
+            .help(String(localized: "Quit"))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -199,49 +404,90 @@ private struct PortRowData: Identifiable, Equatable {
     let pid: Int
     let state: String?
     let isActive: Bool
+    var showProcess: Bool = true
 }
 
 private struct PortRow: View {
     let row: PortRowData
     let isPinned: Bool
+    let isConfirming: Bool
     let onTogglePin: () -> Void
+    let onKillRequest: () -> Void
 
     @State private var isHovering: Bool = false
 
     var body: some View {
+        normalView
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(rowBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .contentShape(Rectangle())
+            .onHover { isHovering = $0 }
+    }
+
+    private var rowBackground: Color {
+        if isConfirming { return Color.red.opacity(0.08) }
+        return isHovering ? Color.primary.opacity(0.06) : .clear
+    }
+
+    private var canKill: Bool {
+        row.isActive && row.pid > 0 && !RowActions.isProtected(pid: Int32(row.pid))
+    }
+
+    private var normalView: some View {
         HStack(spacing: 8) {
+            statusDot
             protoBadge
             Text("\(row.port)")
                 .font(.system(.body, design: .monospaced).weight(.semibold))
                 .foregroundStyle(row.isActive ? .primary : .tertiary)
                 .frame(width: 56, alignment: .leading)
-            VStack(alignment: .leading, spacing: 0) {
-                Text(row.processName)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .foregroundStyle(row.isActive ? .primary : .secondary)
-                if row.isActive {
-                    Text("pid \(row.pid)" + (row.state.map { " · \($0)" } ?? ""))
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+            if row.showProcess {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(row.processName)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .foregroundStyle(row.isActive ? .primary : .secondary)
+                    if row.isActive {
+                        Text("pid \(row.pid)" + (row.state.map { " · \($0)" } ?? ""))
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
             }
             Spacer()
-            if isHovering || isPinned {
-                Button(action: onTogglePin) {
-                    Image(systemName: isPinned ? "pin.fill" : "pin")
-                        .foregroundStyle(isPinned ? Color.accentColor : Color.secondary)
-                }
-                .buttonStyle(.borderless)
-                .help(isPinned ? "Unpin from menu bar" : "Pin to menu bar")
-            }
+            actionButtons
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(isHovering ? Color.primary.opacity(0.06) : .clear)
-        .clipShape(RoundedRectangle(cornerRadius: 5))
-        .contentShape(Rectangle())
-        .onHover { isHovering = $0 }
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        if isHovering || isPinned {
+            Button(action: onTogglePin) {
+                Image(systemName: isPinned ? "pin.fill" : "pin")
+                    .foregroundStyle(isPinned ? Color.accentColor : Color.secondary)
+            }
+            .buttonStyle(.borderless)
+            .help(isPinned ? String(localized: "Unpin from menu bar") : String(localized: "Pin to menu bar"))
+        }
+        if isHovering && canKill {
+            Button(action: onKillRequest) {
+                Image(systemName: "stop.circle")
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.borderless)
+            .help(String(localized: "Kill process"))
+        }
+    }
+
+
+    private var statusDot: some View {
+        Image(systemName: row.isActive ? "circle.fill" : "circle")
+            .font(.system(size: 8))
+            .foregroundStyle(row.isActive ? Color.green : Color.secondary)
+            .frame(width: 10)
+            .help(row.isActive ? String(localized: "Active") : String(localized: "Inactive"))
     }
 
     @ViewBuilder
@@ -255,5 +501,40 @@ private struct PortRow: View {
             .background(bg.opacity(row.isActive ? 0.85 : 0.35))
             .clipShape(Capsule())
             .frame(width: 32)
+    }
+}
+
+private struct KillConfirmBar: View {
+    let pid: Int
+    let onCancel: () -> Void
+    let onKill: () -> Void
+    let onForceKill: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .font(.caption)
+            Text("Kill PID \(pid)?")
+                .font(.caption)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer()
+            Button(String(localized: "Cancel"), action: onCancel)
+                .controlSize(.small)
+            Button(action: onKill) {
+                Text(String(localized: "Kill"))
+            }
+            .controlSize(.small)
+            Button(role: .destructive, action: onForceKill) {
+                Text(String(localized: "Force Kill"))
+            }
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Color.red.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 5))
+        .padding(.horizontal, 4)
     }
 }

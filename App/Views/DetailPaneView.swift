@@ -281,7 +281,9 @@ struct DetailPaneView: View {
     @ViewBuilder
     private func pinButton(for e: PortEntry) -> some View {
         let pinned: Bool = settings.pinnedPorts.contains(e.port)
-        let title: String = pinned ? "Unpin from Menu Bar" : "Pin to Menu Bar"
+        let title: String = pinned
+            ? String(localized: "Unpin from Menu Bar")
+            : String(localized: "Pin to Menu Bar")
         let icon: String = pinned ? "pin.slash" : "pin"
         Button {
             settings.togglePin(port: e.port)

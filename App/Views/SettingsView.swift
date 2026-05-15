@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
+    @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var updater: UpdateChecker
     @ObservedObject var logStore: LogStore
 
@@ -9,9 +10,59 @@ struct SettingsView: View {
         Form {
             Section("General") {
                 Toggle("Launch at Login", isOn: $settings.launchAtLogin)
+                Toggle("Hide repeated process names", isOn: $settings.menuBarGroupSamePid)
+                Toggle("Hide duplicate rows", isOn: $settings.hideDuplicateRows)
+            }
+            Section("Menu Bar") {
                 Toggle("Show in Menu Bar", isOn: $settings.showMenuBar)
-                Toggle("Compact menu bar list (port only)", isOn: $settings.menuBarCompact)
-                Toggle("Group same-process ports in menu bar", isOn: $settings.menuBarGroupSamePid)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Title format")
+                    Picker(selection: $settings.menuBarCompact) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Port only")
+                            Text("●  3000   ○  3001")
+                                .font(.system(.caption, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                        }
+                        .tag(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Port + process")
+                            Text("●  3000 Node.js   ○  3001 nginx")
+                                .font(.system(.caption, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                        }
+                        .tag(false)
+                    } label: {
+                        EmptyView()
+                    }
+                    .pickerStyle(.radioGroup)
+                    .labelsHidden()
+                    .padding(.leading, 4)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .disabled(!settings.showMenuBar)
+            }
+            Section("Refresh") {
+                Toggle("Auto refresh", isOn: Binding(
+                    get: { viewModel.autoRefresh },
+                    set: { on in
+                        viewModel.autoRefresh = on
+                        if on { viewModel.bootstrapIfNeeded(interval: settings.refreshIntervalSeconds) }
+                        else { Task { await viewModel.stopStream() } }
+                    }
+                ))
+                Picker("Foreground refresh interval", selection: $settings.refreshIntervalSeconds) {
+                    Text("1 second").tag(1.0)
+                    Text("3 seconds").tag(3.0)
+                    Text("5 seconds").tag(5.0)
+                }
+                .disabled(!viewModel.autoRefresh)
+                Picker("Background refresh interval", selection: $settings.backgroundRefreshMode) {
+                    Text("Same as foreground").tag(BackgroundRefreshMode.same)
+                    Text("Slower (2× interval)").tag(BackgroundRefreshMode.slower)
+                    Text("Pause").tag(BackgroundRefreshMode.paused)
+                }
+                .disabled(!viewModel.autoRefresh)
             }
             Section("Language") {
                 Picker("Language", selection: $settings.appLanguage) {

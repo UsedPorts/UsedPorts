@@ -2,6 +2,12 @@ import Foundation
 import SwiftUI
 import ServiceManagement
 
+public enum BackgroundRefreshMode: String, CaseIterable, Codable {
+    case same       // Poll at the same interval whether the window is visible or not.
+    case slower     // Default: double the interval when the window is hidden.
+    case paused     // Stop polling while the window is hidden; resume on show.
+}
+
 @MainActor
 public final class AppSettings: ObservableObject {
     private static let showMenuBarKey = "settings.showMenuBar"
@@ -9,6 +15,9 @@ public final class AppSettings: ObservableObject {
     private static let pinnedPortsKey = "settings.pinnedPorts"
     private static let menuBarCompactKey = "settings.menuBarCompact"
     private static let menuBarGroupSamePidKey = "settings.menuBarGroupSamePid"
+    private static let hideDuplicateRowsKey = "settings.hideDuplicateRows"
+    private static let refreshIntervalKey = "settings.refreshIntervalSeconds"
+    private static let backgroundRefreshModeKey = "settings.backgroundRefreshMode"
 
     /// Whether the NSStatusItem is shown in the menu bar. Changes are persisted to UserDefaults,
     /// and AppDelegate subscribes to this publisher to update statusItem.isVisible.
@@ -53,6 +62,34 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    /// When true, rows whose visible columns are identical (pid, port, proto, IP family,
+    /// address, state, user, process) are collapsed to the first occurrence. Differs only
+    /// by file descriptor — lsof reports each fd separately, and dup/multi-listener sockets
+    /// otherwise appear as visual duplicates in the table.
+    @Published public var hideDuplicateRows: Bool {
+        didSet {
+            guard oldValue != hideDuplicateRows else { return }
+            UserDefaults.standard.set(hideDuplicateRows, forKey: Self.hideDuplicateRowsKey)
+        }
+    }
+
+    /// Base poll interval for the lsof scanner, in seconds.
+    @Published public var refreshIntervalSeconds: Double {
+        didSet {
+            guard oldValue != refreshIntervalSeconds else { return }
+            UserDefaults.standard.set(refreshIntervalSeconds, forKey: Self.refreshIntervalKey)
+        }
+    }
+
+    /// How the scanner behaves while the main window is hidden — keep the same cadence,
+    /// halve it (default), or pause entirely until the window is shown again.
+    @Published public var backgroundRefreshMode: BackgroundRefreshMode {
+        didSet {
+            guard oldValue != backgroundRefreshMode else { return }
+            UserDefaults.standard.set(backgroundRefreshMode.rawValue, forKey: Self.backgroundRefreshModeKey)
+        }
+    }
+
     /// Port numbers to display as status text next to the menu bar icon. Sorting is applied at display time.
     @Published public var pinnedPorts: Set<UInt16> {
         didSet {
@@ -77,11 +114,32 @@ public final class AppSettings: ObservableObject {
             self.showMenuBar = UserDefaults.standard.bool(forKey: Self.showMenuBarKey)
         }
         self.appLanguage = (UserDefaults.standard.string(forKey: Self.appLanguageKey) ?? "system")
-        self.menuBarCompact = UserDefaults.standard.bool(forKey: Self.menuBarCompactKey)
+        if UserDefaults.standard.object(forKey: Self.menuBarCompactKey) == nil {
+            self.menuBarCompact = true
+        } else {
+            self.menuBarCompact = UserDefaults.standard.bool(forKey: Self.menuBarCompactKey)
+        }
         if UserDefaults.standard.object(forKey: Self.menuBarGroupSamePidKey) == nil {
             self.menuBarGroupSamePid = true
         } else {
             self.menuBarGroupSamePid = UserDefaults.standard.bool(forKey: Self.menuBarGroupSamePidKey)
+        }
+        if UserDefaults.standard.object(forKey: Self.hideDuplicateRowsKey) == nil {
+            self.hideDuplicateRows = true
+        } else {
+            self.hideDuplicateRows = UserDefaults.standard.bool(forKey: Self.hideDuplicateRowsKey)
+        }
+        if UserDefaults.standard.object(forKey: Self.refreshIntervalKey) == nil {
+            self.refreshIntervalSeconds = 3.0
+        } else {
+            let saved = UserDefaults.standard.double(forKey: Self.refreshIntervalKey)
+            self.refreshIntervalSeconds = saved > 0 ? saved : 3.0
+        }
+        if let raw = UserDefaults.standard.string(forKey: Self.backgroundRefreshModeKey),
+           let mode = BackgroundRefreshMode(rawValue: raw) {
+            self.backgroundRefreshMode = mode
+        } else {
+            self.backgroundRefreshMode = .slower
         }
         if let arr = UserDefaults.standard.array(forKey: Self.pinnedPortsKey) as? [Int] {
             self.pinnedPorts = Set(arr.compactMap { UInt16(exactly: $0) })

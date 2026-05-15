@@ -109,8 +109,8 @@ struct MenuBarContent: View {
     private var defaultList: some View {
         if !settings.pinnedPorts.isEmpty {
             sectionLabel(String(localized: "Pinned"))
-            ForEach(pinnedRows) { row in
-                rowView(row)
+            ForEach(pinnedRows) { item in
+                rowView(item)
             }
             Divider().padding(.vertical, 4)
         }
@@ -121,8 +121,8 @@ struct MenuBarContent: View {
                 .font(.caption)
                 .padding(.vertical, 12)
         } else {
-            ForEach(recentRows) { row in
-                rowView(row)
+            ForEach(recentRows) { item in
+                rowView(item)
             }
         }
     }
@@ -137,8 +137,8 @@ struct MenuBarContent: View {
         }
         if !searchRows.isEmpty {
             sectionLabel(String(localized: "Matches"))
-            ForEach(searchRows) { row in
-                rowView(row)
+            ForEach(searchRows) { item in
+                rowView(item)
             }
         } else if pinnablePortFromQuery == nil {
             Text("(no matches)")
@@ -149,10 +149,12 @@ struct MenuBarContent: View {
     }
 
     @ViewBuilder
-    private func rowView(_ row: PortRowData) -> some View {
+    private func rowView(_ item: AnnotatedRow) -> some View {
+        let row = item.row
         let confirming = (confirmKillRowId == row.id) && row.isActive
         PortRow(
             row: row,
+            hideProcess: item.hideProcess,
             isPinned: settings.pinnedPorts.contains(row.port),
             isConfirming: confirming,
             onTogglePin: { settings.togglePin(port: row.port) },
@@ -183,18 +185,19 @@ struct MenuBarContent: View {
 
     // MARK: - Row data
 
-    private var pinnedRows: [PortRowData] {
+    private var pinnedRows: [AnnotatedRow] {
         let map = Dictionary(grouping: viewModel.rawEntries, by: { $0.port })
-        return settings.pinnedPorts.sorted().map { port in
+        let rows: [PortRowData] = settings.pinnedPorts.sorted().map { port in
             if let e = map[port]?.first {
                 return PortRowData(id: "pin-\(port)", port: port, proto: e.proto.rawValue, processName: e.processName, pid: Int(e.pid), state: e.state, isActive: true)
             } else {
                 return PortRowData(id: "pin-\(port)", port: port, proto: "—", processName: String(localized: "(inactive)"), pid: 0, state: nil, isActive: false)
             }
         }
+        return annotateGrouping(rows)
     }
 
-    private var recentRows: [PortRowData] {
+    private var recentRows: [AnnotatedRow] {
         let pinnedSet = settings.pinnedPorts
         let rows = viewModel.visibleEntries.filter { !pinnedSet.contains($0.port) }
             .sorted { $0.port < $1.port }
@@ -204,7 +207,7 @@ struct MenuBarContent: View {
         return annotateGrouping(rows)
     }
 
-    private var searchRows: [PortRowData] {
+    private var searchRows: [AnnotatedRow] {
         var state = FilterState()
         state.globalSearch = query
         let rows = viewModel.rawEntries
@@ -218,20 +221,18 @@ struct MenuBarContent: View {
         return annotateGrouping(rows)
     }
 
-    /// Hide the process name on rows where the same PID just appeared above (or in compact mode).
-    /// This produces the "two-line cell" look for same-PID groups: ports stack, name shown once.
-    private func annotateGrouping(_ rows: [PortRowData]) -> [PortRowData] {
-        var result: [PortRowData] = []
+    /// Tag each row with whether its process name should be hidden. The "ports-only"
+    /// menu-bar toggle controls only the NSStatusItem title (see `AppDelegate`), so
+    /// popover rows always show process info; only "group same-process rows" hides
+    /// the name on a row whose PID matches the row above.
+    private func annotateGrouping(_ rows: [PortRowData]) -> [AnnotatedRow] {
+        let group = settings.menuBarGroupSamePid
+        var result: [AnnotatedRow] = []
         result.reserveCapacity(rows.count)
         var prevPid: Int? = nil
         for row in rows {
-            var r = row
-            if settings.menuBarCompact {
-                r.showProcess = false
-            } else if settings.menuBarGroupSamePid, let p = prevPid, p == row.pid, row.pid > 0 {
-                r.showProcess = false
-            }
-            result.append(r)
+            let hide = group && prevPid == row.pid && row.pid > 0
+            result.append(AnnotatedRow(row: row, hideProcess: hide))
             prevPid = row.pid
         }
         return result
@@ -404,11 +405,17 @@ private struct PortRowData: Identifiable, Equatable {
     let pid: Int
     let state: String?
     let isActive: Bool
-    var showProcess: Bool = true
+}
+
+private struct AnnotatedRow: Identifiable, Equatable {
+    let row: PortRowData
+    let hideProcess: Bool
+    var id: String { row.id }
 }
 
 private struct PortRow: View {
     let row: PortRowData
+    let hideProcess: Bool
     let isPinned: Bool
     let isConfirming: Bool
     let onTogglePin: () -> Void
@@ -443,7 +450,7 @@ private struct PortRow: View {
                 .font(.system(.body, design: .monospaced).weight(.semibold))
                 .foregroundStyle(row.isActive ? .primary : .tertiary)
                 .frame(width: 56, alignment: .leading)
-            if row.showProcess {
+            if !hideProcess {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(row.processName)
                         .lineLimit(1)

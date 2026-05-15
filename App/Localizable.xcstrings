@@ -63,6 +63,42 @@
         }
       }
     },
+    "●  3000   ○  3001" : {
+
+    },
+    "●  3000 Node.js   ○  3001 nginx" : {
+
+    },
+    "1 second" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1초"
+          }
+        }
+      }
+    },
+    "3 seconds" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3초"
+          }
+        }
+      }
+    },
+    "5 seconds" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5초"
+          }
+        }
+      }
+    },
     "3000  ·  1000~2000  ·  5000+  ·  ~80" : {
 
     },
@@ -134,6 +170,17 @@
         }
       }
     },
+    "Auto refresh" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자동 새로고침"
+          }
+        }
+      }
+    },
     "Auto-refresh" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -152,6 +199,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "업데이트 자동 확인"
+          }
+        }
+      }
+    },
+    "Background refresh interval" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "백그라운드 새로고침 간격"
           }
         }
       }
@@ -240,27 +298,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "검색어 지우기"
-          }
-        }
-      }
-    },
-    "Compact menu bar list (port only)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "메뉴바 목록 간단히 표시 (포트만)"
-          }
-        }
-      }
-    },
-    "Group same-process ports in menu bar" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "같은 프로세스 포트는 한 칸에 표시"
           }
         }
       }
@@ -508,6 +545,28 @@
         }
       }
     },
+    "Force Kill All" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 강제 종료"
+          }
+        }
+      }
+    },
+    "Foreground refresh interval" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포그라운드 새로고침 간격"
+          }
+        }
+      }
+    },
     "From" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -559,6 +618,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "헬퍼 시작 실패: %@"
+          }
+        }
+      }
+    },
+    "Hide duplicate rows" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "중복 행 숨기기"
+          }
+        }
+      }
+    },
+    "Hide repeated process names" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "같은 프로세스 이름 가리기"
           }
         }
       }
@@ -745,6 +826,17 @@
         }
       }
     },
+    "Menu Bar" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메뉴바"
+          }
+        }
+      }
+    },
     "min" : {
       "localizations" : {
         "ko" : {
@@ -792,6 +884,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "경로:"
+          }
+        }
+      }
+    },
+    "Pause" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일시정지"
           }
         }
       }
@@ -856,6 +958,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "고정됨"
+          }
+        }
+      }
+    },
+    "Port + process" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트 + 프로세스명"
+          }
+        }
+      }
+    },
+    "Port only" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트만"
           }
         }
       }
@@ -964,6 +1086,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Finder에서 보기"
+          }
+        }
+      }
+    },
+    "Same as foreground" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포그라운드와 동일"
           }
         }
       }
@@ -1088,6 +1220,16 @@
         }
       }
     },
+    "Slower (2× interval)" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "느리게 (2배 간격)"
+          }
+        }
+      }
+    },
     "Sort" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1163,6 +1305,16 @@
         }
       }
     },
+    "Title format" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "타이틀 형식"
+          }
+        }
+      }
+    },
     "To" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1180,6 +1332,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "오늘"
+          }
+        }
+      }
+    },
+    "Unpin All from Menu Bar" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메뉴바에서 모두 고정 해제"
           }
         }
       }

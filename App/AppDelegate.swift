@@ -15,6 +15,8 @@ final class AppHostStore: ObservableObject {
     let updater: UpdateChecker
     let logStore: LogStore
 
+    private var refreshCancellables: Set<AnyCancellable> = []
+
     init() {
         let scanner = PortScanner()
         let toasts = ToastCenter()
@@ -30,6 +32,21 @@ final class AppHostStore: ObservableObject {
         self.toasts = toasts
         self.updater = updater
         self.logStore = logStore
+
+        // Seed the scanner config from persisted settings, then propagate runtime changes.
+        viewModel.setRefreshInterval(settings.refreshIntervalSeconds)
+        viewModel.setBackgroundRefreshMode(settings.backgroundRefreshMode)
+        settings.$refreshIntervalSeconds
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak viewModel] interval in viewModel?.setRefreshInterval(interval) }
+            .store(in: &refreshCancellables)
+        settings.$backgroundRefreshMode
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak viewModel] mode in viewModel?.setBackgroundRefreshMode(mode) }
+            .store(in: &refreshCancellables)
+
         logStore.info("App started")
     }
 }
@@ -78,13 +95,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         // `automaticallyChecksForUpdates` flag — no explicit call required at launch.
     }
 
-    /// Updates the status text next to the menu bar icon (pinned port state) whenever pinnedPorts or rawEntries changes.
+    /// Updates the status text next to the menu bar icon (pinned port state) whenever pinnedPorts,
+    /// rawEntries, or the "ports-only" compact toggle changes.
     private func observePinnedPorts() {
         host.settings.$pinnedPorts
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.updateStatusItemTitle() }
             .store(in: &titleCancellables)
         host.viewModel.$rawEntries
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateStatusItemTitle() }
+            .store(in: &titleCancellables)
+        host.settings.$menuBarCompact
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.updateStatusItemTitle() }
             .store(in: &titleCancellables)
@@ -98,13 +120,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             button.attributedTitle = NSAttributedString()
             return
         }
-        let active = Set(host.viewModel.rawEntries.map { $0.port })
+        let byPort = Dictionary(grouping: host.viewModel.rawEntries, by: { $0.port })
+        let showName = !host.settings.menuBarCompact
         let portFont = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        let nameFont = NSFont.systemFont(ofSize: 12, weight: .regular)
         let dotFont = NSFont.systemFont(ofSize: 7, weight: .bold)
         let result = NSMutableAttributedString()
         result.append(NSAttributedString(string: "  "))
         for (i, port) in pinned.enumerated() {
-            let isActive = active.contains(port)
+            let entry = byPort[port]?.first
+            let isActive = (entry != nil)
             let dotColor: NSColor = isActive ? .systemGreen : .tertiaryLabelColor
             let textColor: NSColor = isActive ? .labelColor : .tertiaryLabelColor
             let dotAttrs: [NSAttributedString.Key: Any] = [
@@ -112,14 +137,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 .font: dotFont,
                 .baselineOffset: 2,
             ]
-            let textAttrs: [NSAttributedString.Key: Any] = [
+            let portAttrs: [NSAttributedString.Key: Any] = [
                 .foregroundColor: textColor,
                 .font: portFont,
             ]
+            let nameAttrs: [NSAttributedString.Key: Any] = [
+                .foregroundColor: NSColor.labelColor,
+                .font: nameFont,
+            ]
             result.append(NSAttributedString(string: isActive ? "● " : "○ ", attributes: dotAttrs))
-            result.append(NSAttributedString(string: "\(port)", attributes: textAttrs))
+            result.append(NSAttributedString(string: "\(port)", attributes: portAttrs))
+            if showName, let name = entry?.processName, !name.isEmpty {
+                result.append(NSAttributedString(string: " \(name)", attributes: nameAttrs))
+            }
             if i < pinned.count - 1 {
-                result.append(NSAttributedString(string: "  ", attributes: textAttrs))
+                result.append(NSAttributedString(string: "  ", attributes: portAttrs))
             }
         }
         button.attributedTitle = result

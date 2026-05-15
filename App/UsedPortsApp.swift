@@ -17,6 +17,7 @@ struct UsedPortsApp: App {
 
         Settings {
             SettingsView(settings: appDelegate.host.settings,
+                         viewModel: appDelegate.host.viewModel,
                          updater: appDelegate.host.updater,
                          logStore: appDelegate.host.logStore)
         }

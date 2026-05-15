@@ -15,6 +15,7 @@ public final class PortListViewModel: ObservableObject {
     private let toasts: ToastCenter?
     private var streamTask: Task<Void, Never>?
     private var currentBaseInterval: TimeInterval = 3.0
+    private var backgroundRefreshMode: BackgroundRefreshMode = .slower
 
     private var augCache: [Int32: PortEntry] = [:]
     private var augTask: Task<Void, Never>?
@@ -197,8 +198,8 @@ public final class PortListViewModel: ObservableObject {
     public func setWindowVisible(_ visible: Bool) {
         let was = windowVisible
         windowVisible = visible
-        if was != visible, streamTask != nil {
-            startStream(interval: currentBaseInterval)
+        if was != visible {
+            applyStreamForCurrentState()
         }
         if !visible {
             augTask?.cancel()
@@ -206,6 +207,34 @@ public final class PortListViewModel: ObservableObject {
         } else {
             startAugmentation()
         }
+    }
+
+    /// Restart, stop, or leave the polling stream alone based on visibility + background mode.
+    /// Centralized so visibility changes, interval changes, and mode changes go through one path.
+    private func applyStreamForCurrentState() {
+        if !windowVisible && backgroundRefreshMode == .paused {
+            if streamTask != nil {
+                Task { await stopStream() }
+            }
+        } else if autoRefresh {
+            startStream(interval: currentBaseInterval)
+        }
+    }
+
+    /// Updates the base poll interval and restarts the stream if it's currently running.
+    public func setRefreshInterval(_ interval: TimeInterval) {
+        guard interval > 0, currentBaseInterval != interval else { return }
+        currentBaseInterval = interval
+        if streamTask != nil {
+            startStream(interval: interval)
+        }
+    }
+
+    /// Updates the background-refresh mode. Restarts (or pauses) the stream to apply.
+    public func setBackgroundRefreshMode(_ mode: BackgroundRefreshMode) {
+        guard backgroundRefreshMode != mode else { return }
+        backgroundRefreshMode = mode
+        applyStreamForCurrentState()
     }
 
     private func startAugmentation() {
@@ -235,7 +264,12 @@ public final class PortListViewModel: ObservableObject {
     }
 
     private func effectiveInterval(base: TimeInterval) -> TimeInterval {
-        return windowVisible ? base : base * 2
+        if windowVisible { return base }
+        switch backgroundRefreshMode {
+        case .same: return base
+        case .slower: return base * 2
+        case .paused: return base   // not used — paused mode stops the stream entirely
+        }
     }
 
     private func applyBatch(_ batch: [PortEntry]) {

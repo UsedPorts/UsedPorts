@@ -30,7 +30,7 @@ struct DetailPaneView: View {
     private func killAlert(intent: KillIntent) -> Alert {
         let title: String = intent.signal == .kill ? "Send SIGKILL?" : "Terminate process"
         let message: String = "PID \(intent.pid) (\(intent.label))"
-        let primaryLabel: String = intent.signal == .kill ? "Kill -9" : "Kill"
+        let primaryLabel: String = intent.signal == .kill ? "Force Kill" : "Kill"
         return Alert(
             title: Text(title),
             message: Text(message),
@@ -177,7 +177,7 @@ struct DetailPaneView: View {
             killConfirm = KillIntent(pid: e.pid, label: e.processName, signal: .term)
         }
         .disabled(protected)
-        Button("Kill -9") {
+        Button("Force Kill") {
             killConfirm = KillIntent(pid: e.pid, label: e.processName, signal: .kill)
         }
         .disabled(protected)

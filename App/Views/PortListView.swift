@@ -11,7 +11,7 @@ struct PortListView: View {
             VStack(spacing: 0) {
                 toolbar
                 Divider()
-                PortListTable(viewModel: viewModel)
+                PortListTable(viewModel: viewModel, settings: settings)
                 Divider()
                 DetailPaneView(viewModel: viewModel, privilege: privilege, toasts: toasts, settings: settings)
             }

@@ -2,10 +2,21 @@ import SwiftUI
 
 struct PortListTable: View {
     @ObservedObject var viewModel: PortListViewModel
+    @ObservedObject var settings: AppSettings
     @State private var openColumn: PortColumn? = nil
     @State private var sortOrder: [KeyPathComparator<PortEntry>] = [
         KeyPathComparator(\PortEntry.port, order: .forward)
     ]
+
+    /// Pinned ports float to the top; the rest preserve the user's current sort.
+    private var orderedEntries: [PortEntry] {
+        let pinned = settings.pinnedPorts
+        guard !pinned.isEmpty else { return viewModel.visibleEntries }
+        let entries = viewModel.visibleEntries
+        let pins = entries.filter { pinned.contains($0.port) }
+        let rest = entries.filter { !pinned.contains($0.port) }
+        return pins + rest
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,7 +42,7 @@ struct PortListTable: View {
     }
 
     private var tableView: some View {
-        Table(viewModel.visibleEntries,
+        Table(orderedEntries,
               selection: $viewModel.selection,
               sortOrder: $sortOrder,
               columnCustomization: $viewModel.columnCustomization) {

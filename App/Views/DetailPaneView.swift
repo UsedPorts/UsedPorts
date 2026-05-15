@@ -219,6 +219,7 @@ struct DetailPaneView: View {
     private func multiActions(for entries: [PortEntry]) -> some View {
         HStack(spacing: 6) {
             multiCopyButtons(for: entries)
+            pinAllButton(for: entries)
             Spacer()
             multiBulkButtons(for: entries)
         }
@@ -227,8 +228,8 @@ struct DetailPaneView: View {
     @ViewBuilder
     private func multiCopyButtons(for entries: [PortEntry]) -> some View {
         copyAllMultiButton(for: entries)
-        copyPortsButton(for: entries)
         copyPidsButton(for: entries)
+        copyPortsButton(for: entries)
     }
 
     private func copyAllMultiButton(for entries: [PortEntry]) -> some View {
@@ -258,13 +259,25 @@ struct DetailPaneView: View {
 
     @ViewBuilder
     private func multiBulkButtons(for entries: [PortEntry]) -> some View {
-        pinAllButton(for: entries)
         killAllButton(for: entries)
+        forceKillAllButton(for: entries)
     }
 
+    @ViewBuilder
     private func pinAllButton(for entries: [PortEntry]) -> some View {
-        Button("Pin All to Menu Bar") {
-            for e in entries { settings.pinnedPorts.insert(e.port) }
+        let allPinned = !entries.isEmpty && entries.allSatisfy { settings.pinnedPorts.contains($0.port) }
+        Button {
+            if allPinned {
+                for e in entries { settings.pinnedPorts.remove(e.port) }
+            } else {
+                for e in entries { settings.pinnedPorts.insert(e.port) }
+            }
+        } label: {
+            if allPinned {
+                Label("Unpin All from Menu Bar", systemImage: "pin.slash.fill")
+            } else {
+                Label("Pin All to Menu Bar", systemImage: "pin.fill")
+            }
         }
     }
 
@@ -273,6 +286,16 @@ struct DetailPaneView: View {
         return Button("Kill All") {
             for e in entries where !RowActions.isProtected(pid: e.pid) {
                 killConfirm = KillIntent(pid: e.pid, label: e.processName, signal: .term)
+            }
+        }
+        .disabled(allProtected)
+    }
+
+    private func forceKillAllButton(for entries: [PortEntry]) -> some View {
+        let allProtected: Bool = entries.allSatisfy { RowActions.isProtected(pid: $0.pid) }
+        return Button("Force Kill All") {
+            for e in entries where !RowActions.isProtected(pid: e.pid) {
+                killConfirm = KillIntent(pid: e.pid, label: e.processName, signal: .kill)
             }
         }
         .disabled(allProtected)
@@ -349,8 +372,10 @@ struct KillIntent: Identifiable {
 /// Serializes selected PortEntries to TSV or a human-readable table.
 enum PortEntryFormatter {
     /// Tab-separated table format — paste-friendly for spreadsheets and notes.
+    /// Column order matches the main table's default arrangement so the clipboard
+    /// payload reads top-to-bottom the same way the user sees the rows on screen.
     static func tsv(for entries: [PortEntry]) -> String {
-        let header = "PID\tPort\tProto\tIP\tProcess\tAddress\tState\tUser\tStarted\tPath\tCWD"
+        let header = "PID\tPort\tProcess\tProto\tIP\tAddress\tState\tUser\tStarted\tPath\tCWD"
         var lines: [String] = [header]
         for e in entries {
             lines.append(row(for: e))
@@ -361,9 +386,9 @@ enum PortEntryFormatter {
     private static func row(for e: PortEntry) -> String {
         let pid: String = sanitize("\(e.pid)")
         let port: String = sanitize("\(e.port)")
+        let processName: String = sanitize(e.processName)
         let proto: String = sanitize(e.proto.rawValue)
         let family: String = sanitize(e.ipFamily?.rawValue ?? "")
-        let processName: String = sanitize(e.processName)
         let address: String = sanitize(e.localAddress)
         let state: String = sanitize(e.state ?? "")
         let user: String = sanitize(e.user)
@@ -374,9 +399,9 @@ enum PortEntryFormatter {
         var line: String = ""
         line += pid;          line += "\t"
         line += port;         line += "\t"
+        line += processName;  line += "\t"
         line += proto;        line += "\t"
         line += family;       line += "\t"
-        line += processName;  line += "\t"
         line += address;      line += "\t"
         line += state;        line += "\t"
         line += user;         line += "\t"

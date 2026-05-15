@@ -9,13 +9,54 @@ struct PortListTable: View {
     ]
 
     /// Pinned ports float to the top; the rest preserve the user's current sort.
+    /// When `settings.hideDuplicateRows` is on, rows whose visible columns match are
+    /// collapsed to a single entry (lsof reports each socket file descriptor as its
+    /// own row, which otherwise surfaces as visual duplicates).
     private var orderedEntries: [PortEntry] {
+        let entries = settings.hideDuplicateRows
+            ? Self.deduplicated(viewModel.visibleEntries)
+            : viewModel.visibleEntries
         let pinned = settings.pinnedPorts
-        guard !pinned.isEmpty else { return viewModel.visibleEntries }
-        let entries = viewModel.visibleEntries
+        guard !pinned.isEmpty else { return entries }
         let pins = entries.filter { pinned.contains($0.port) }
         let rest = entries.filter { !pinned.contains($0.port) }
         return pins + rest
+    }
+
+    /// Keeps the first occurrence per (pid, port, proto, ipFamily, localAddress, state, user, process) tuple.
+    /// The hidden file-descriptor differs across collapsed rows, but those columns are not shown
+    /// to the user so they appear identical.
+    private static func deduplicated(_ entries: [PortEntry]) -> [PortEntry] {
+        var seen: Set<String> = []
+        var out: [PortEntry] = []
+        out.reserveCapacity(entries.count)
+        for e in entries {
+            let key = "\(e.pid)\u{1F}\(e.port)\u{1F}\(e.proto.rawValue)\u{1F}\(e.ipFamily?.rawValue ?? "")\u{1F}\(e.localAddress)\u{1F}\(e.state ?? "")\u{1F}\(e.user)\u{1F}\(e.processName)"
+            if seen.insert(key).inserted {
+                out.append(e)
+            }
+        }
+        return out
+    }
+
+    /// Entry ids whose Process column should be blanked because the row above shares the same PID.
+    /// Driven by the "Group same-process rows" setting; pinned rows are excluded so the pin block
+    /// always names its owner.
+    private var groupedHiddenIds: Set<PortEntry.ID> {
+        guard settings.menuBarGroupSamePid else { return [] }
+        var hidden: Set<PortEntry.ID> = []
+        var prevPid: Int32? = nil
+        for e in orderedEntries {
+            if settings.pinnedPorts.contains(e.port) {
+                prevPid = nil
+                continue
+            }
+            if let p = prevPid, p == e.pid, e.pid > 0 {
+                hidden.insert(e.id)
+            }
+            prevPid = e.pid
+        }
+        return hidden
     }
 
     var body: some View {
@@ -49,18 +90,29 @@ struct PortListTable: View {
             TableColumn("PID", value: \PortEntry.pid) { e in Text("\(e.pid)") }
                 .width(min: 60, ideal: 70)
                 .customizationID("pid")
-            TableColumn("Port", value: \PortEntry.port) { e in Text("\(e.port)") }
-                .width(min: 60, ideal: 70)
+            TableColumn("Port", value: \PortEntry.port) { e in
+                HStack(spacing: 4) {
+                    if settings.pinnedPorts.contains(e.port) {
+                        Image(systemName: "pin.fill")
+                            .font(.caption2)
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    Text("\(e.port)")
+                }
+            }
+                .width(min: 60, ideal: 80)
                 .customizationID("port")
+            TableColumn("Process", value: \PortEntry.processName) { e in
+                Text(groupedHiddenIds.contains(e.id) ? "" : e.processName)
+            }
+                .width(min: 100, ideal: 160)
+                .customizationID("process")
             TableColumn("Proto", value: \PortEntry.proto.rawValue) { e in Text(e.proto.rawValue) }
                 .width(min: 50, ideal: 60)
                 .customizationID("proto")
             TableColumn("IP", value: \PortEntry.ipFamilyForSort) { e in Text(e.ipFamily?.rawValue ?? "—") }
                 .width(min: 50, ideal: 60)
                 .customizationID("ipFamily")
-            TableColumn("Process", value: \PortEntry.processName) { e in Text(e.processName) }
-                .width(min: 100, ideal: 160)
-                .customizationID("process")
             TableColumn("Address", value: \PortEntry.localAddress) { e in Text(e.localAddress) }
                 .width(min: 100, ideal: 140)
                 .customizationID("address")

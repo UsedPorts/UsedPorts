@@ -62,7 +62,7 @@ public extension PortEntry {
 }
 
 public enum PortColumn: String, CaseIterable, Hashable, Codable {
-    case pid, port, proto, ipFamily, process, address, state, user, started
+    case pid, port, process, proto, ipFamily, address, state, user, started
 }
 
 public enum SortDir: String, Codable { case asc, desc }

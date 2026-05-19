@@ -63,7 +63,22 @@ struct DetailPaneView: View {
         if let aug = augmented {
             byId[aug.id] = aug
         }
-        let picked = viewModel.selection.compactMap { byId[$0] }
+        var picked: [PortEntry] = []
+        var includedIds: Set<PortEntry.ID> = []
+        for selId in viewModel.selection {
+            // Group rows use ids of the form "group-{pid}"; expand them to all entries
+            // belonging to that PID so kill/copy/pin operations apply to the whole group.
+            if selId.hasPrefix("group-"),
+               let pid = Int32(selId.dropFirst("group-".count)) {
+                for entry in viewModel.rawEntries where entry.pid == pid {
+                    if includedIds.insert(entry.id).inserted {
+                        picked.append(byId[entry.id] ?? entry)
+                    }
+                }
+            } else if let e = byId[selId], includedIds.insert(e.id).inserted {
+                picked.append(e)
+            }
+        }
         return picked.sorted { $0.port < $1.port }
     }
 

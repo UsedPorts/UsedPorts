@@ -9,7 +9,7 @@ public final class PortListViewModel: ObservableObject {
     @Published public var selection: Set<PortEntry.ID> = []
     @Published public var autoRefresh: Bool = true
     @Published public var windowVisible: Bool = true
-    @Published public var columnCustomization: TableColumnCustomization<PortEntry> = TableColumnCustomization<PortEntry>()
+    @Published var columnCustomization: TableColumnCustomization<PortTableRow> = TableColumnCustomization<PortTableRow>()
 
     private let scanner: PortScanner
     private let toasts: ToastCenter?
@@ -28,7 +28,7 @@ public final class PortListViewModel: ObservableObject {
         self.toasts = toasts
         self.augmenter = augmenter
         if let data = UserDefaults.standard.data(forKey: customizationKey),
-           let decoded = try? JSONDecoder().decode(TableColumnCustomization<PortEntry>.self, from: data) {
+           let decoded = try? JSONDecoder().decode(TableColumnCustomization<PortTableRow>.self, from: data) {
             self.columnCustomization = decoded
         }
     }
@@ -39,8 +39,11 @@ public final class PortListViewModel: ObservableObject {
         }
     }
 
-    public var visibleEntries: [PortEntry] {
-        let merged = rawEntries.map { e -> PortEntry in
+    /// rawEntries with cached augment data (executable path, cwd, startTime) merged in.
+    /// No filter or sort applied. Used by views that want to apply their own filter
+    /// behavior (e.g. PID-grouping dims non-matching groups instead of hiding them).
+    public var augmentedEntries: [PortEntry] {
+        rawEntries.map { e -> PortEntry in
             if let cached = augCache[e.pid] {
                 var out = e
                 out.executablePath = cached.executablePath
@@ -50,7 +53,10 @@ public final class PortListViewModel: ObservableObject {
             }
             return e
         }
-        return Self.apply(sort: sort, filter: filter, to: merged)
+    }
+
+    public var visibleEntries: [PortEntry] {
+        Self.apply(sort: sort, filter: filter, to: augmentedEntries)
     }
 
     public nonisolated static func apply(sort: SortSpec, filter: FilterState, to entries: [PortEntry]) -> [PortEntry] {
@@ -276,7 +282,18 @@ public final class PortListViewModel: ObservableObject {
         let prevSelected = selection
         rawEntries = batch
         let liveIds = Set(batch.map(\.id))
-        let stillAlive = prevSelected.intersection(liveIds)
+        let livePids = Set(batch.map { $0.pid })
+        // Group rows live under "group-{pid}" ids; they stay selected as long as the PID
+        // still has any port in the batch. Leaf ids must match an entry id exactly.
+        var stillAlive: Set<PortEntry.ID> = []
+        for id in prevSelected {
+            if id.hasPrefix("group-"),
+               let pid = Int32(id.dropFirst("group-".count)) {
+                if livePids.contains(pid) { stillAlive.insert(id) }
+            } else if liveIds.contains(id) {
+                stillAlive.insert(id)
+            }
+        }
         if !prevSelected.isEmpty, stillAlive.isEmpty {
             selection = []
             toasts?.showToast(String(localized: "Selected process has terminated"))
@@ -285,7 +302,6 @@ public final class PortListViewModel: ObservableObject {
             selection = stillAlive
         }
         // Prune cache entries whose PIDs no longer exist.
-        let livePids = Set(batch.map { $0.pid })
         augCache = augCache.filter { livePids.contains($0.key) }
         if windowVisible {
             startAugmentation()

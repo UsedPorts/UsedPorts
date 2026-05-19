@@ -16,6 +16,7 @@ public final class AppSettings: ObservableObject {
     private static let menuBarCompactKey = "settings.menuBarCompact"
     private static let menuBarGroupSamePidKey = "settings.menuBarGroupSamePid"
     private static let hideDuplicateRowsKey = "settings.hideDuplicateRows"
+    private static let groupByPidKey = "settings.groupByPid"
     private static let refreshIntervalKey = "settings.refreshIntervalSeconds"
     private static let backgroundRefreshModeKey = "settings.backgroundRefreshMode"
 
@@ -70,6 +71,17 @@ public final class AppSettings: ObservableObject {
         didSet {
             guard oldValue != hideDuplicateRows else { return }
             UserDefaults.standard.set(hideDuplicateRows, forKey: Self.hideDuplicateRowsKey)
+        }
+    }
+
+    /// When true, the main table groups rows by PID. Processes that own ≥2 ports collapse
+    /// into a parent row with a disclosure indicator; the parent shows port ranges and
+    /// comma-joined proto/IP/address/state labels. Processes with a single port render as
+    /// a normal leaf row (no indicator).
+    @Published public var groupByPid: Bool {
+        didSet {
+            guard oldValue != groupByPid else { return }
+            UserDefaults.standard.set(groupByPid, forKey: Self.groupByPidKey)
         }
     }
 
@@ -128,6 +140,11 @@ public final class AppSettings: ObservableObject {
             self.hideDuplicateRows = true
         } else {
             self.hideDuplicateRows = UserDefaults.standard.bool(forKey: Self.hideDuplicateRowsKey)
+        }
+        if UserDefaults.standard.object(forKey: Self.groupByPidKey) == nil {
+            self.groupByPid = true
+        } else {
+            self.groupByPid = UserDefaults.standard.bool(forKey: Self.groupByPidKey)
         }
         if UserDefaults.standard.object(forKey: Self.refreshIntervalKey) == nil {
             self.refreshIntervalSeconds = 3.0

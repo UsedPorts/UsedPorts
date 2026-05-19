@@ -589,6 +589,16 @@
         }
       }
     },
+    "Group by PID" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PID로 그룹화"
+          }
+        }
+      }
+    },
     "Help" : {
       "extractionState" : "stale",
       "localizations" : {

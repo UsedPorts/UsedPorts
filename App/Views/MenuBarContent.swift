@@ -355,6 +355,7 @@ struct MenuBarContent: View {
     private var footer: some View {
         HStack(spacing: 6) {
             Button {
+                NSApp.activate(ignoringOtherApps: true)
                 openWindow(id: "main")
             } label: {
                 Label("Show All Ports", systemImage: "macwindow")
@@ -372,6 +373,7 @@ struct MenuBarContent: View {
             .help(String(localized: "Refresh"))
             Spacer()
             Button {
+                NSApp.activate(ignoringOtherApps: true)
                 openSettings()
             } label: {
                 Label("Settings", systemImage: "gearshape")

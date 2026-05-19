@@ -470,22 +470,28 @@ private struct PortRow: View {
         }
     }
 
-    @ViewBuilder
     private var actionButtons: some View {
-        if isHovering || isPinned {
+        // Always render the buttons so the row's layout doesn't shift when the
+        // pointer enters/leaves; toggle visibility through opacity instead.
+        let pinVisible = isHovering || isPinned
+        let killVisible = isHovering && canKill
+        return HStack(spacing: 6) {
             Button(action: onTogglePin) {
                 Image(systemName: isPinned ? "pin.fill" : "pin")
                     .foregroundStyle(isPinned ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.borderless)
+            .opacity(pinVisible ? 1 : 0)
+            .allowsHitTesting(pinVisible)
             .help(isPinned ? String(localized: "Unpin from menu bar") : String(localized: "Pin to menu bar"))
-        }
-        if isHovering && canKill {
+
             Button(action: onKillRequest) {
                 Image(systemName: "stop.circle")
                     .foregroundStyle(.red)
             }
             .buttonStyle(.borderless)
+            .opacity(killVisible ? 1 : 0)
+            .allowsHitTesting(killVisible)
             .help(String(localized: "Kill process"))
         }
     }

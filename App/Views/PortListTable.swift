@@ -315,6 +315,7 @@ struct PortListTable: View {
                                     isPinned: anyChildPinned,
                                     dimmed: false,
                                     children: children,
+                                    pinnedPorts: pinnedPorts,
                                     sort: sort))
         }
         return sortRows(out, sort: sort)
@@ -398,6 +399,7 @@ struct PortListTable: View {
                                      isPinned: Bool,
                                      dimmed: Bool,
                                      children: [PortTableRow],
+                                     pinnedPorts: Set<UInt16>,
                                      sort: SortSpec) -> PortTableRow {
         let sortDir = sort.dir
         // The group's representative for each column comes from its children: forward sort
@@ -419,18 +421,15 @@ struct PortListTable: View {
             )
         }
 
-        // Each multi-value label is reversed only when the user is sorting that very column
-        // in descending order. So sorting Port desc flips the port list (and individual
-        // ranges) while leaving Proto/IP/State labels alone.
-        func ascending(_ column: PortColumn) -> Bool {
-            !(sort.column == column && sort.dir == .desc)
-        }
-        let ports = Set(members.map { $0.port }).sorted()
-        let portsLabel = formatPortRanges(ports, ascending: ascending(.port))
-        let protoLabel = uniqueSortedJoined(members.map { $0.proto.rawValue }, ascending: ascending(.proto))
-        let ipLabel = uniqueSortedJoined(members.map { $0.ipFamily?.rawValue ?? "—" }, ascending: ascending(.ipFamily))
-        let addressLabel = uniqueSortedJoined(members.map { $0.localAddress }, ascending: ascending(.address))
-        let stateLabel = uniqueSortedJoined(members.map { $0.state ?? "—" }, ascending: ascending(.state))
+        // Labels follow the children's display order so the joined values line up with the
+        // rows the user actually sees: the first distinct value the user would scroll past
+        // appears first in the label. Ports are split into pinned vs rest first (pinned
+        // chunk always leads) and range-compressed when the user is sorting by Port.
+        let portsLabel = makePortsLabel(children: children, pinnedPorts: pinnedPorts, sort: sort)
+        let protoLabel = orderedUniqueJoined(children.map { $0.protoLabel })
+        let ipLabel = orderedUniqueJoined(children.map { $0.ipLabel })
+        let addressLabel = orderedUniqueJoined(children.map { $0.addressLabel })
+        let stateLabel = orderedUniqueJoined(children.map { $0.stateLabel })
         let processName = members.first?.processName ?? ""
         let userLabel = members.first?.user ?? ""
         let startedLabel: String = members.first?.startTime.map { formatStarted($0) } ?? "—"
@@ -476,37 +475,60 @@ struct PortListTable: View {
         return f.string(from: d)
     }
 
-    private static func uniqueSortedJoined(_ values: [String], ascending: Bool = true) -> String {
-        var uniq = Array(Set(values)).sorted()
-        if !ascending { uniq.reverse() }
-        return uniq.joined(separator: ", ")
+    /// Joins distinct values in the order they first appear (first-seen wins). Used for
+    /// group labels so the joined string mirrors the order of the rendered child rows.
+    private static func orderedUniqueJoined(_ values: [String]) -> String {
+        var seen: Set<String> = []
+        var out: [String] = []
+        for v in values where seen.insert(v).inserted {
+            out.append(v)
+        }
+        return out.joined(separator: ", ")
     }
 
-    /// Compresses sorted ports into ranges: [3000, 3001, 3002, 3005] → "3000-3002, 3005".
-    /// When `ascending` is false both the range list and each range's endpoints are flipped
-    /// so descending Port sort shows "3005, 3002-3000".
-    static func formatPortRanges(_ ports: [UInt16], ascending: Bool = true) -> String {
+    /// Builds the group's Port label by reading port numbers in the children's display
+    /// order. Pinned ports lead, then the rest follow; when the user is sorting by Port,
+    /// consecutive runs collapse into "1024-1026" honoring the active direction.
+    private static func makePortsLabel(children: [PortTableRow],
+                                       pinnedPorts: Set<UInt16>,
+                                       sort: SortSpec) -> String {
+        var seen: Set<UInt16> = []
+        var pinnedSeq: [UInt16] = []
+        var restSeq: [UInt16] = []
+        for child in children {
+            guard let p = child.backingEntries.first?.port else { continue }
+            if !seen.insert(p).inserted { continue }
+            if pinnedPorts.contains(p) { pinnedSeq.append(p) } else { restSeq.append(p) }
+        }
+        let compress = sort.column == .port
+        let asc = sort.dir == .asc
+        let pinnedLabel = formatPortsOrdered(pinnedSeq, compress: compress, asc: asc)
+        let restLabel = formatPortsOrdered(restSeq, compress: compress, asc: asc)
+        return [pinnedLabel, restLabel].filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+
+    /// Formats an ordered port sequence. With `compress` and a strictly ±1 run, neighbours
+    /// collapse to "start-end"; otherwise each port is emitted verbatim in input order.
+    private static func formatPortsOrdered(_ ports: [UInt16], compress: Bool, asc: Bool) -> String {
         guard !ports.isEmpty else { return "" }
+        if !compress {
+            return ports.map { "\($0)" }.joined(separator: ", ")
+        }
+        let step = asc ? 1 : -1
         var result: [String] = []
         var start = ports[0]
         var prev = ports[0]
         for p in ports.dropFirst() {
-            if p == prev + 1 {
+            if Int(p) == Int(prev) + step {
                 prev = p
             } else {
-                result.append(rangeLabel(start: start, end: prev, ascending: ascending))
+                result.append(start == prev ? "\(start)" : "\(start)-\(prev)")
                 start = p
                 prev = p
             }
         }
-        result.append(rangeLabel(start: start, end: prev, ascending: ascending))
-        if !ascending { result.reverse() }
+        result.append(start == prev ? "\(start)" : "\(start)-\(prev)")
         return result.joined(separator: ", ")
-    }
-
-    private static func rangeLabel(start: UInt16, end: UInt16, ascending: Bool) -> String {
-        if start == end { return "\(start)" }
-        return ascending ? "\(start)-\(end)" : "\(end)-\(start)"
     }
 
     // MARK: - Sort helpers

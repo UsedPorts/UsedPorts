@@ -73,9 +73,10 @@ struct PortListTable: View {
     @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var settings: AppSettings
     @State private var openColumn: PortColumn? = nil
-    @State private var sortOrder: [KeyPathComparator<PortTableRow>] = [
-        KeyPathComparator(\PortTableRow.sortPort, order: .forward)
-    ]
+    /// PIDs whose group rows are currently disclosed. PortOutlineView reads/writes this
+    /// via a Binding; we also auto-expand whenever the user selects a group so its
+    /// children show up under the native NSOutlineView highlight.
+    @State private var expandedGroups: Set<Int32> = []
 
     private var rows: [PortTableRow] {
         Self.buildRows(
@@ -91,102 +92,55 @@ struct PortListTable: View {
     var body: some View {
         VStack(spacing: 0) {
             columnChips
-            tableView
-                .onChange(of: sortOrder) { _, new in
-                    if let first = new.first {
-                        viewModel.sort = Self.sortSpec(from: first)
+            PortOutlineView(
+                rows: rows,
+                selection: $viewModel.selection,
+                sort: $viewModel.sort,
+                expandedGroups: $expandedGroups
+            )
+            .onChange(of: viewModel.selection) { oldValue, newValue in
+                // Only auto-expand groups that just entered the selection. Keeping group
+                // ids in the augmented set means newValue always carries them, so without
+                // this diff the disclosure would re-open immediately when the user collapses
+                // it manually.
+                let newlyAdded = newValue.subtracting(oldValue)
+                for id in newlyAdded where id.hasPrefix("group-") {
+                    if let pid = Int32(id.dropFirst("group-".count)) {
+                        expandedGroups.insert(pid)
                     }
                 }
-                .onChange(of: viewModel.sort) { _, new in
-                    let comp = Self.comparator(from: new)
-                    if let cur = sortOrder.first,
-                       cur.keyPath == comp.keyPath && cur.order == comp.order {
-                        return
-                    }
-                    sortOrder = [comp]
-                }
-                .onAppear {
-                    sortOrder = [Self.comparator(from: viewModel.sort)]
-                }
+                syncAugmentedSelection()
+            }
+            .onChange(of: expandedGroups) { _, _ in syncAugmentedSelection() }
+            .onChange(of: viewModel.rawEntries) { _, _ in syncAugmentedSelection() }
         }
     }
 
-    private var tableView: some View {
-        Table(rows,
-              children: \.children,
-              selection: $viewModel.selection,
-              sortOrder: $sortOrder,
-              columnCustomization: $viewModel.columnCustomization) {
-            TableColumn("PID", value: \PortTableRow.sortPid) { row in
-                Text("\(row.pid)").opacity(row.dimmed ? 0.4 : 1)
-            }
-            .width(min: 60, ideal: 70)
-            .customizationID("pid")
-
-            TableColumn("Port", value: \PortTableRow.sortPort) { row in
-                HStack(spacing: 4) {
-                    if row.isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.caption2)
-                            .foregroundStyle(Color.accentColor)
-                    }
-                    Text(row.portsLabel)
-                        .font(.system(.body, design: .monospaced))
-                }
-                .opacity(row.dimmed ? 0.4 : 1)
-            }
-            .width(min: 60, ideal: 80)
-            .customizationID("port")
-
-            TableColumn("Process", value: \PortTableRow.sortProcess) { row in
-                Text(row.processName).opacity(row.dimmed ? 0.4 : 1)
-            }
-            .width(min: 100, ideal: 160)
-            .customizationID("process")
-
-            TableColumn("Proto", value: \PortTableRow.sortProto) { row in
-                Text(row.protoLabel).opacity(row.dimmed ? 0.4 : 1)
-            }
-            .width(min: 50, ideal: 60)
-            .customizationID("proto")
-
-            TableColumn("IP", value: \PortTableRow.sortIP) { row in
-                Text(row.ipLabel).opacity(row.dimmed ? 0.4 : 1)
-            }
-            .width(min: 50, ideal: 60)
-            .customizationID("ipFamily")
-
-            TableColumn("Address", value: \PortTableRow.sortAddress) { row in
-                Text(row.addressLabel).opacity(row.dimmed ? 0.4 : 1)
-            }
-            .width(min: 100, ideal: 140)
-            .customizationID("address")
-
-            TableColumn("State", value: \PortTableRow.sortState) { row in
-                Text(row.stateLabel).opacity(row.dimmed ? 0.4 : 1)
-            }
-            .width(min: 80, ideal: 100)
-            .customizationID("state")
-
-            TableColumn("User", value: \PortTableRow.sortUser) { row in
-                Text(row.userLabel).opacity(row.dimmed ? 0.4 : 1)
-            }
-            .width(min: 80, ideal: 100)
-            .customizationID("user")
-
-            TableColumn("Started", value: \PortTableRow.sortStarted) { row in
-                Text(row.startedLabel).opacity(row.dimmed ? 0.4 : 1)
-            }
-            .width(min: 90, ideal: 110)
-            .customizationID("started")
+    /// SwiftUI Table reads the selection binding on its own schedule and won't re-derive
+    /// row highlight from a get-only wrapper when a disclosure expands. Instead we keep
+    /// the child entry ids inside `viewModel.selection` itself and let SwiftUI bind to it
+    /// directly. `syncAugmentedSelection()` runs whenever the selection, expansion state,
+    /// or live entries change, refilling the augmented set so newly visible children
+    /// always carry the native highlight.
+    private func syncAugmentedSelection() {
+        let visible = settings.hideDuplicateRows
+            ? Self.deduplicated(viewModel.rawEntries)
+            : viewModel.rawEntries
+        let augmented = Self.expandGroupSelection(viewModel.selection, visibleEntries: visible)
+        if augmented != viewModel.selection {
+            viewModel.selection = augmented
         }
-        .task {
-            // Periodically persist column customization changes (reorder/hide).
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                viewModel.persistCustomization()
+    }
+
+    private static func expandGroupSelection(_ selection: Set<PortEntry.ID>, visibleEntries: [PortEntry]) -> Set<PortEntry.ID> {
+        var out = selection
+        for id in selection where id.hasPrefix("group-") {
+            guard let pid = Int32(id.dropFirst("group-".count)) else { continue }
+            for entry in visibleEntries where entry.pid == pid {
+                out.insert(entry.id)
             }
         }
+        return out
     }
 
     private var columnChips: some View {
@@ -276,7 +230,6 @@ struct PortListTable: View {
         let deduped = hideDuplicateRows ? deduplicated(entries) : entries
 
         if !groupByPid {
-            // Flat: filter hides non-matching rows (preserves prior behavior).
             let leaves: [PortTableRow] = deduped.compactMap { entry in
                 guard PortListViewModel.matches(filter, entry) else { return nil }
                 let pinned = pinnedPorts.contains(entry.port)
@@ -301,9 +254,6 @@ struct PortListTable: View {
                 continue
             }
 
-            // Children are sorted explicitly because SwiftUI's hierarchical Table doesn't
-            // re-sort rows from its sortOrder binding — the binding only notifies us of
-            // header taps. The same applies to top-level ordering below.
             let unsorted = members.map { entry -> PortTableRow in
                 let pinned = pinnedPorts.contains(entry.port)
                 let dim = !PortListViewModel.matches(filter, entry)
@@ -531,38 +481,4 @@ struct PortListTable: View {
         return result.joined(separator: ", ")
     }
 
-    // MARK: - Sort helpers
-
-    static func comparator(from spec: SortSpec) -> KeyPathComparator<PortTableRow> {
-        let order: SortOrder = spec.dir == .asc ? .forward : .reverse
-        switch spec.column {
-        case .pid: return KeyPathComparator(\PortTableRow.sortPid, order: order)
-        case .port: return KeyPathComparator(\PortTableRow.sortPort, order: order)
-        case .process: return KeyPathComparator(\PortTableRow.sortProcess, order: order)
-        case .proto: return KeyPathComparator(\PortTableRow.sortProto, order: order)
-        case .ipFamily: return KeyPathComparator(\PortTableRow.sortIP, order: order)
-        case .address: return KeyPathComparator(\PortTableRow.sortAddress, order: order)
-        case .state: return KeyPathComparator(\PortTableRow.sortState, order: order)
-        case .user: return KeyPathComparator(\PortTableRow.sortUser, order: order)
-        case .started: return KeyPathComparator(\PortTableRow.sortStarted, order: order)
-        }
-    }
-
-    static func sortSpec(from comparator: KeyPathComparator<PortTableRow>) -> SortSpec {
-        let dir: SortDir = comparator.order == .forward ? .asc : .desc
-        let column: PortColumn
-        switch comparator.keyPath {
-        case \PortTableRow.sortPid: column = .pid
-        case \PortTableRow.sortPort: column = .port
-        case \PortTableRow.sortProcess: column = .process
-        case \PortTableRow.sortProto: column = .proto
-        case \PortTableRow.sortIP: column = .ipFamily
-        case \PortTableRow.sortAddress: column = .address
-        case \PortTableRow.sortState: column = .state
-        case \PortTableRow.sortUser: column = .user
-        case \PortTableRow.sortStarted: column = .started
-        default: column = .port
-        }
-        return SortSpec(column: column, dir: dir)
-    }
 }

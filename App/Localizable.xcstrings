@@ -878,6 +878,17 @@
         }
       }
     },
+    "Open UsedPorts" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UsedPorts 열기"
+          }
+        }
+      }
+    },
     "Path:" : {
       "localizations" : {
         "ko" : {

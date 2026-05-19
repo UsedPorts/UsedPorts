@@ -358,7 +358,7 @@ struct MenuBarContent: View {
                 NSApp.activate(ignoringOtherApps: true)
                 openWindow(id: "main")
             } label: {
-                Label("Show All Ports", systemImage: "macwindow")
+                Label("Open UsedPorts", systemImage: "macwindow")
             }
             .controlSize(.small)
             .keyboardShortcut("o")

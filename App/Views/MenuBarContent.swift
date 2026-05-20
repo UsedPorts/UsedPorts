@@ -245,7 +245,7 @@ struct MenuBarContent: View {
     private var recentRows: [MenuBarRow] {
         let pinnedSet = settings.pinnedPorts
         let rows = viewModel.visibleEntries.filter { !pinnedSet.contains($0.port) }
-            .sorted { $0.port < $1.port }
+            .sorted(by: Self.stablePortOrder)
             .map {
                 PortRowData(id: $0.id, port: $0.port, proto: $0.proto.rawValue, processName: $0.processName, pid: Int($0.pid), state: $0.state, isActive: true)
             }
@@ -257,13 +257,23 @@ struct MenuBarContent: View {
         state.globalSearch = query
         let rows = viewModel.rawEntries
             .filter { PortListViewModel.matches(state, $0) }
-            .sorted { $0.port < $1.port }
+            .sorted(by: Self.stablePortOrder)
             .map {
                 PortRowData(id: $0.id, port: $0.port, proto: $0.proto.rawValue,
                             processName: $0.processName, pid: Int($0.pid),
                             state: $0.state, isActive: true)
             }
         return buildMenuRows(rows)
+    }
+
+    /// Port ascending with `(pid, id)` tie-breakers. `Array.sorted(by:)` is stable, but stability
+    /// only preserves the *input* order — and our input comes from `lsof`, which doesn't guarantee
+    /// a deterministic order for entries sharing the same port (different PIDs or dup'd fds). Without
+    /// a tie-breaker, same-port rows would visibly swap places between refreshes.
+    private static func stablePortOrder(_ lhs: PortEntry, _ rhs: PortEntry) -> Bool {
+        if lhs.port != rhs.port { return lhs.port < rhs.port }
+        if lhs.pid != rhs.pid { return lhs.pid < rhs.pid }
+        return lhs.id < rhs.id
     }
 
     /// Bridges the menubar list to the same `groupByPid` setting that powers the main table.

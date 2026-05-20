@@ -110,7 +110,7 @@ struct MenuBarContent: View {
         if !settings.pinnedPorts.isEmpty {
             sectionLabel(String(localized: "Pinned"))
             ForEach(pinnedRows) { item in
-                rowView(item)
+                leafRowView(item)
             }
             Divider().padding(.vertical, 4)
         }
@@ -121,8 +121,8 @@ struct MenuBarContent: View {
                 .font(.caption)
                 .padding(.vertical, 12)
         } else {
-            ForEach(recentRows) { item in
-                rowView(item)
+            ForEach(recentRows) { row in
+                menuRowView(row)
             }
         }
     }
@@ -137,8 +137,8 @@ struct MenuBarContent: View {
         }
         if !searchRows.isEmpty {
             sectionLabel(String(localized: "Matches"))
-            ForEach(searchRows) { item in
-                rowView(item)
+            ForEach(searchRows) { row in
+                menuRowView(row)
             }
         } else if pinnablePortFromQuery == nil {
             Text("(no matches)")
@@ -149,12 +149,22 @@ struct MenuBarContent: View {
     }
 
     @ViewBuilder
-    private func rowView(_ item: AnnotatedRow) -> some View {
+    private func menuRowView(_ row: MenuBarRow) -> some View {
+        switch row {
+        case .leaf(let item): leafRowView(item)
+        case .group(let group): groupRowView(group)
+        }
+    }
+
+    @ViewBuilder
+    private func leafRowView(_ item: AnnotatedRow) -> some View {
         let row = item.row
         let confirming = (confirmKillRowId == row.id) && row.isActive
         PortRow(
             row: row,
-            hideProcess: item.hideProcess,
+            showProcessLine: !item.hideProcess,
+            showKillButton: true,
+            leadingIndent: 0,
             isPinned: settings.pinnedPorts.contains(row.port),
             isConfirming: confirming,
             onTogglePin: { settings.togglePin(port: row.port) },
@@ -164,8 +174,43 @@ struct MenuBarContent: View {
             KillConfirmBar(
                 pid: row.pid,
                 onCancel: { confirmKillRowId = nil },
-                onKill: { performKill(row: row, force: false) },
-                onForceKill: { performKill(row: row, force: true) }
+                onKill: { performKill(pid: Int32(row.pid), label: row.processName, force: false) },
+                onForceKill: { performKill(pid: Int32(row.pid), label: row.processName, force: true) }
+            )
+        }
+    }
+
+    /// Header + indented child rows. The header carries the process · pid label and the kill
+    /// button (one kill per PID, matching how `kill(2)` actually behaves); each child carries
+    /// its own pin button so the user can still pin specific ports without disabling grouping.
+    @ViewBuilder
+    private func groupRowView(_ group: GroupRowData) -> some View {
+        let confirming = confirmKillRowId == group.id
+        PortGroupHeader(
+            processName: group.processName,
+            pid: group.pid,
+            portCount: group.children.count,
+            isConfirming: confirming,
+            onKillRequest: { confirmKillRowId = group.id }
+        )
+        if confirming {
+            KillConfirmBar(
+                pid: group.pid,
+                onCancel: { confirmKillRowId = nil },
+                onKill: { performKill(pid: Int32(group.pid), label: group.processName, force: false) },
+                onForceKill: { performKill(pid: Int32(group.pid), label: group.processName, force: true) }
+            )
+        }
+        ForEach(group.children) { child in
+            PortRow(
+                row: child,
+                showProcessLine: false,
+                showKillButton: false,
+                leadingIndent: 16,
+                isPinned: settings.pinnedPorts.contains(child.port),
+                isConfirming: false,
+                onTogglePin: { settings.togglePin(port: child.port) },
+                onKillRequest: {}
             )
         }
     }
@@ -197,17 +242,17 @@ struct MenuBarContent: View {
         return annotateGrouping(rows)
     }
 
-    private var recentRows: [AnnotatedRow] {
+    private var recentRows: [MenuBarRow] {
         let pinnedSet = settings.pinnedPorts
         let rows = viewModel.visibleEntries.filter { !pinnedSet.contains($0.port) }
             .sorted { $0.port < $1.port }
             .map {
                 PortRowData(id: $0.id, port: $0.port, proto: $0.proto.rawValue, processName: $0.processName, pid: Int($0.pid), state: $0.state, isActive: true)
             }
-        return annotateGrouping(rows)
+        return buildMenuRows(rows)
     }
 
-    private var searchRows: [AnnotatedRow] {
+    private var searchRows: [MenuBarRow] {
         var state = FilterState()
         state.globalSearch = query
         let rows = viewModel.rawEntries
@@ -218,7 +263,51 @@ struct MenuBarContent: View {
                             processName: $0.processName, pid: Int($0.pid),
                             state: $0.state, isActive: true)
             }
-        return annotateGrouping(rows)
+        return buildMenuRows(rows)
+    }
+
+    /// Bridges the menubar list to the same `groupByPid` setting that powers the main table.
+    /// When on, PIDs that own ≥2 ports render as a process · pid header followed by indented
+    /// child rows (one per port). Single-port PIDs render as a normal leaf row so the toggle
+    /// doesn't add visual noise for processes that only own one port. When off, falls back to
+    /// the flat layout — `menuBarGroupSamePid` still hides the repeated process · pid line on
+    /// adjacent same-PID rows so the two modes look visually similar.
+    private func buildMenuRows(_ rows: [PortRowData]) -> [MenuBarRow] {
+        guard settings.groupByPid else {
+            return annotateGrouping(rows).map { .leaf($0) }
+        }
+        var seenPids: Set<Int> = []
+        var pidOrder: [Int] = []
+        var byPid: [Int: [PortRowData]] = [:]
+        var orphans: [PortRowData] = []
+        for row in rows {
+            guard row.pid > 0 else {
+                orphans.append(row)
+                continue
+            }
+            if seenPids.insert(row.pid).inserted {
+                pidOrder.append(row.pid)
+            }
+            byPid[row.pid, default: []].append(row)
+        }
+        var out: [MenuBarRow] = []
+        for pid in pidOrder {
+            let members = byPid[pid] ?? []
+            if members.count <= 1, let only = members.first {
+                out.append(.leaf(AnnotatedRow(row: only, hideProcess: false)))
+            } else {
+                out.append(.group(GroupRowData(
+                    id: "group-\(pid)",
+                    pid: pid,
+                    processName: members.first?.processName ?? "",
+                    children: members
+                )))
+            }
+        }
+        for row in orphans {
+            out.append(.leaf(AnnotatedRow(row: row, hideProcess: false)))
+        }
+        return out
     }
 
     /// Tag each row with whether its process name should be hidden. The "ports-only"
@@ -276,9 +365,7 @@ struct MenuBarContent: View {
 
     // MARK: - Kill flow (inline confirmation, mirrors DetailPaneView's escalation)
 
-    private func performKill(row: PortRowData, force: Bool) {
-        let pid = Int32(row.pid)
-        let label = row.processName
+    private func performKill(pid: Int32, label: String, force: Bool) {
         confirmKillRowId = nil
         guard pid > 0, !RowActions.isProtected(pid: pid) else { return }
         let signal: KillSignal = force ? .kill : .term
@@ -415,9 +502,35 @@ private struct AnnotatedRow: Identifiable, Equatable {
     var id: String { row.id }
 }
 
+private struct GroupRowData: Identifiable, Equatable {
+    let id: String
+    let pid: Int
+    let processName: String
+    let children: [PortRowData]
+}
+
+private enum MenuBarRow: Identifiable, Equatable {
+    case leaf(AnnotatedRow)
+    case group(GroupRowData)
+
+    var id: String {
+        switch self {
+        case .leaf(let item): return item.id
+        case .group(let group): return group.id
+        }
+    }
+}
+
+/// Single port row. Used in three roles: standalone leaf (Pinned/Search/OFF mode), single-port
+/// PID under groupByPid (treated as leaf since there's nothing to collapse), and indented child
+/// of a `PortGroupHeader`. The header role hides the per-row process line and kill button so the
+/// PID-level controls live on the header; both roles share the same port/proto/state line so the
+/// list keeps a consistent visual rhythm between ON and OFF.
 private struct PortRow: View {
     let row: PortRowData
-    let hideProcess: Bool
+    let showProcessLine: Bool
+    let showKillButton: Bool
+    let leadingIndent: CGFloat
     let isPinned: Bool
     let isConfirming: Bool
     let onTogglePin: () -> Void
@@ -426,13 +539,45 @@ private struct PortRow: View {
     @State private var isHovering: Bool = false
 
     var body: some View {
-        normalView
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(rowBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 5))
-            .contentShape(Rectangle())
-            .onHover { isHovering = $0 }
+        HStack(spacing: 8) {
+            statusDot
+            protoBadge
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 6) {
+                    Text("\(row.port)")
+                        .font(.system(.body, design: .monospaced).weight(.semibold))
+                        .foregroundStyle(row.isActive ? .primary : .tertiary)
+                    if let state = row.state, !state.isEmpty {
+                        Text(state)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                if showProcessLine {
+                    Text(processLine)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+            }
+            Spacer(minLength: 4)
+            actionButtons
+        }
+        .padding(.leading, 8 + leadingIndent)
+        .padding(.trailing, 8)
+        .padding(.vertical, 4)
+        .background(rowBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 5))
+        .contentShape(Rectangle())
+        .onHover { isHovering = $0 }
+    }
+
+    private var processLine: String {
+        if row.isActive && row.pid > 0 {
+            return "\(row.processName) · pid \(row.pid)"
+        }
+        return row.processName
     }
 
     private var rowBackground: Color {
@@ -444,37 +589,11 @@ private struct PortRow: View {
         row.isActive && row.pid > 0 && !RowActions.isProtected(pid: Int32(row.pid))
     }
 
-    private var normalView: some View {
-        HStack(spacing: 8) {
-            statusDot
-            protoBadge
-            Text("\(row.port)")
-                .font(.system(.body, design: .monospaced).weight(.semibold))
-                .foregroundStyle(row.isActive ? .primary : .tertiary)
-                .frame(width: 56, alignment: .leading)
-            if !hideProcess {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(row.processName)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .foregroundStyle(row.isActive ? .primary : .secondary)
-                    if row.isActive {
-                        Text("pid \(row.pid)" + (row.state.map { " · \($0)" } ?? ""))
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-            }
-            Spacer()
-            actionButtons
-        }
-    }
-
     private var actionButtons: some View {
-        // Always render the buttons so the row's layout doesn't shift when the
-        // pointer enters/leaves; toggle visibility through opacity instead.
+        // Render with opacity toggles so layout doesn't shift on hover. Pin is always visible
+        // when pinned (so the user sees their state); kill is hover-only to keep the row clean.
         let pinVisible = isHovering || isPinned
-        let killVisible = isHovering && canKill
+        let killVisible = showKillButton && isHovering && canKill
         return HStack(spacing: 6) {
             Button(action: onTogglePin) {
                 Image(systemName: isPinned ? "pin.fill" : "pin")
@@ -485,17 +604,18 @@ private struct PortRow: View {
             .allowsHitTesting(pinVisible)
             .help(isPinned ? String(localized: "Unpin from menu bar") : String(localized: "Pin to menu bar"))
 
-            Button(action: onKillRequest) {
-                Image(systemName: "stop.circle")
-                    .foregroundStyle(.red)
+            if showKillButton {
+                Button(action: onKillRequest) {
+                    Image(systemName: "stop.circle")
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.borderless)
+                .opacity(killVisible ? 1 : 0)
+                .allowsHitTesting(killVisible)
+                .help(String(localized: "Kill process"))
             }
-            .buttonStyle(.borderless)
-            .opacity(killVisible ? 1 : 0)
-            .allowsHitTesting(killVisible)
-            .help(String(localized: "Kill process"))
         }
     }
-
 
     private var statusDot: some View {
         Image(systemName: row.isActive ? "circle.fill" : "circle")
@@ -516,6 +636,75 @@ private struct PortRow: View {
             .background(bg.opacity(row.isActive ? 0.85 : 0.35))
             .clipShape(Capsule())
             .frame(width: 32)
+    }
+}
+
+/// PID-level header for a grouped block. Hosts the process · pid label and the kill button so
+/// the child rows below stay focused on their port-specific information.
+private struct PortGroupHeader: View {
+    let processName: String
+    let pid: Int
+    let portCount: Int
+    let isConfirming: Bool
+    let onKillRequest: () -> Void
+
+    @State private var isHovering: Bool = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(processName)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Text("·")
+                .foregroundStyle(.tertiary)
+            Text("pid \(pid)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("·")
+                .foregroundStyle(.tertiary)
+            Text(portsSummary)
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+            Spacer(minLength: 4)
+            killButton
+        }
+        .padding(.horizontal, 8)
+        .padding(.top, 6)
+        .padding(.bottom, 2)
+        .background(rowBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 5))
+        .contentShape(Rectangle())
+        .onHover { isHovering = $0 }
+    }
+
+    private var portsSummary: String {
+        let portsWord = portCount == 1
+            ? NSLocalizedString("port", comment: "singular")
+            : NSLocalizedString("ports", comment: "plural")
+        return "\(portCount) \(portsWord)"
+    }
+
+    private var rowBackground: Color {
+        if isConfirming { return Color.red.opacity(0.08) }
+        return isHovering ? Color.primary.opacity(0.04) : .clear
+    }
+
+    private var canKill: Bool {
+        pid > 0 && !RowActions.isProtected(pid: Int32(pid))
+    }
+
+    private var killButton: some View {
+        let visible = isHovering && canKill
+        return Button(action: onKillRequest) {
+            Image(systemName: "stop.circle")
+                .foregroundStyle(.red)
+        }
+        .buttonStyle(.borderless)
+        .opacity(visible ? 1 : 0)
+        .allowsHitTesting(visible)
+        .help(String(localized: "Kill process"))
     }
 }
 

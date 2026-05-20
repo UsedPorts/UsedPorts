@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "·" : {
+
+    },
     "(inactive)" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -926,6 +929,9 @@
         }
       }
     },
+    "pid %@" : {
+
+    },
     "Pin All to Menu Bar" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -980,6 +986,9 @@
         }
       }
     },
+    "port" : {
+      "comment" : "singular"
+    },
     "Port + process" : {
       "localizations" : {
         "ko" : {
@@ -999,6 +1008,9 @@
           }
         }
       }
+    },
+    "ports" : {
+      "comment" : "plural"
     },
     "Preset" : {
       "extractionState" : "stale",

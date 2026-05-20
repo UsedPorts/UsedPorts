@@ -244,8 +244,8 @@ struct MenuBarContent: View {
 
     private var recentRows: [MenuBarRow] {
         let pinnedSet = settings.pinnedPorts
-        let rows = viewModel.visibleEntries.filter { !pinnedSet.contains($0.port) }
-            .sorted(by: Self.stablePortOrder)
+        let entries = dedupedForMenuBar(viewModel.visibleEntries.filter { !pinnedSet.contains($0.port) })
+        let rows = entries.sorted(by: Self.stablePortOrder)
             .map {
                 PortRowData(id: $0.id, port: $0.port, proto: $0.proto.rawValue, processName: $0.processName, pid: Int($0.pid), state: $0.state, isActive: true)
             }
@@ -255,15 +255,32 @@ struct MenuBarContent: View {
     private var searchRows: [MenuBarRow] {
         var state = FilterState()
         state.globalSearch = query
-        let rows = viewModel.rawEntries
-            .filter { PortListViewModel.matches(state, $0) }
-            .sorted(by: Self.stablePortOrder)
+        let entries = dedupedForMenuBar(viewModel.rawEntries.filter { PortListViewModel.matches(state, $0) })
+        let rows = entries.sorted(by: Self.stablePortOrder)
             .map {
                 PortRowData(id: $0.id, port: $0.port, proto: $0.proto.rawValue,
                             processName: $0.processName, pid: Int($0.pid),
                             state: $0.state, isActive: true)
             }
         return buildMenuRows(rows)
+    }
+
+    /// When `hideDuplicateRows` is on, collapse the menubar list on a coarser key than the
+    /// main table — only (pid, proto, port). The popover doesn't expose address/state/user
+    /// columns, so two rows differing only on those would look identical to the user; this
+    /// keeps the dense menubar list free of visual duplicates without affecting the table.
+    private func dedupedForMenuBar(_ entries: [PortEntry]) -> [PortEntry] {
+        guard settings.hideDuplicateRows else { return entries }
+        var seen: Set<String> = []
+        var out: [PortEntry] = []
+        out.reserveCapacity(entries.count)
+        for e in entries {
+            let key = "\(e.pid)\u{1F}\(e.proto.rawValue)\u{1F}\(e.port)"
+            if seen.insert(key).inserted {
+                out.append(e)
+            }
+        }
+        return out
     }
 
     /// Port ascending with `(pid, id)` tie-breakers. `Array.sorted(by:)` is stable, but stability

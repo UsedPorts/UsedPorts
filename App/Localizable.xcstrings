@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "—" : {
-
-    },
     "(inactive)" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -568,7 +565,6 @@
       }
     },
     "From" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -590,6 +586,7 @@
       }
     },
     "Group by PID" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -1337,7 +1334,6 @@
       }
     },
     "To" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {

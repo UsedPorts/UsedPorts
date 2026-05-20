@@ -145,33 +145,46 @@ struct PortListTable: View {
 
     private var columnChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 ForEach(PortColumn.allCases, id: \.self) { col in
                     let isActive = (viewModel.filter.byColumn[col]?.isEmpty == false)
-                    Button {
-                        openColumn = col
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "line.3.horizontal.decrease").font(.caption2)
-                            Text(label(col))
-                                .font(.caption)
-                                .fontWeight(isActive ? .semibold : .regular)
-                            if isActive {
-                                Circle()
-                                    .fill(Color.accentColor)
-                                    .frame(width: 5, height: 5)
+                    HStack(spacing: 6) {
+                        Button {
+                            openColumn = col
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "line.3.horizontal.decrease").font(.callout)
+                                Text(label(col))
+                                    .font(.callout)
+                                    .fontWeight(isActive ? .semibold : .regular)
+                                if isActive {
+                                    Circle()
+                                        .fill(Color.accentColor)
+                                        .frame(width: 6, height: 6)
+                                }
                             }
                         }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(isActive ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.1))
-                        .foregroundStyle(isActive ? Color.accentColor : Color.primary)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .buttonStyle(.plain)
+                        .help(isActive
+                              ? String(localized: "Filter: \(label(col)) (active)")
+                              : String(localized: "Filter: \(label(col))"))
+
+                        if isActive {
+                            Button {
+                                viewModel.filter.byColumn.removeValue(forKey: col)
+                            } label: {
+                                Image(systemName: "trash")
+                                    .font(.callout)
+                            }
+                            .buttonStyle(.plain)
+                            .help(String(localized: "Clear filter: \(label(col))"))
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .help(isActive
-                          ? String(localized: "Filter: \(label(col)) (active)")
-                          : String(localized: "Filter: \(label(col))"))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(isActive ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.1))
+                    .foregroundStyle(isActive ? Color.accentColor : Color.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 7))
                     .popover(isPresented: Binding(
                         get: { openColumn == col },
                         set: { if !$0 { openColumn = nil } }
@@ -188,8 +201,8 @@ struct PortListTable: View {
                     }
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
         }
     }
 
@@ -210,7 +223,12 @@ struct PortListTable: View {
     private func dynamicValues(for c: PortColumn) -> [String] {
         switch c {
         case .address:  return Array(Set(viewModel.rawEntries.map { $0.localAddress })).sorted()
-        case .state:    return Array(Set(viewModel.rawEntries.compactMap { $0.state })).sorted()
+        case .state:
+            var values = Set(viewModel.rawEntries.compactMap { $0.state })
+            if viewModel.rawEntries.contains(where: { $0.state == nil }) {
+                values.insert("")
+            }
+            return Array(values).sorted()
         case .user:     return Array(Set(viewModel.rawEntries.map { $0.user })).sorted()
         case .ipFamily: return ["IPv4", "IPv6"]
         default:        return []

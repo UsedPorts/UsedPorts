@@ -25,7 +25,7 @@ struct ColumnFilterPopover: View {
                     viewModel.filter.byColumn.removeValue(forKey: column)
                     clearLocalState()
                 } label: {
-                    Label("Clear filter", systemImage: "xmark.circle")
+                    Label("Clear filter", systemImage: "trash")
                 }
                 .disabled(viewModel.filter.byColumn[column] == nil)
                 Spacer()
@@ -34,9 +34,15 @@ struct ColumnFilterPopover: View {
             }
         }
         .padding(12)
-        .frame(width: 280)
+        .frame(width: column == .started ? 420 : 280)
         .onAppear(perform: hydrate)
     }
+
+    private static let hour24Locale: Locale = {
+        var components = Locale.Components(locale: Locale.current)
+        components.hourCycle = .zeroToTwentyThree
+        return Locale(components: components)
+    }()
 
     private func clearLocalState() {
         numberInput = ""
@@ -76,6 +82,11 @@ struct ColumnFilterPopover: View {
             if let n = s.lastN { lastNText = "\(n)" }
         case .none:
             break
+        }
+        if column == .started && tspec.mode == .customFixed {
+            let now = Date()
+            if tspec.fromDate == nil { tspec.fromDate = now }
+            if tspec.toDate == nil { tspec.toDate = now }
         }
     }
 
@@ -133,12 +144,12 @@ struct ColumnFilterPopover: View {
             HStack(spacing: 4) {
                 TextField(placeholder, text: $compoundText, onCommit: applyCompound)
                     .textFieldStyle(.roundedBorder)
+                    .onChange(of: compoundText) { _, _ in applyCompound() }
                 clearButton(visible: !compoundText.isEmpty) {
                     compoundText = ""
                     applyCompound()
                 }
             }
-            Button("Apply") { applyCompound() }
             if !options.isEmpty {
                 Divider()
                 if collapsible {
@@ -164,7 +175,13 @@ struct ColumnFilterPopover: View {
     }
 
     private func compoundCheckboxRow(_ opt: String) -> some View {
-        Toggle(opt.isEmpty ? "(empty)" : opt, isOn: Binding(
+        let label: String
+        if opt.isEmpty {
+            label = (column == .state) ? "—" : "(empty)"
+        } else {
+            label = opt
+        }
+        return Toggle(label, isOn: Binding(
             get: { compoundSelected.contains(opt) },
             set: { on in
                 if on { compoundSelected.insert(opt) } else { compoundSelected.remove(opt) }
@@ -195,7 +212,6 @@ struct ColumnFilterPopover: View {
                     applyNumber()
                 }
             }
-            Button("Apply") { applyNumber() }
         }
     }
 
@@ -213,13 +229,14 @@ struct ColumnFilterPopover: View {
             HStack(spacing: 4) {
                 TextField("Text or regex", text: $textInput, onCommit: applyText)
                     .textFieldStyle(.roundedBorder)
+                    .onChange(of: textInput) { _, _ in applyText() }
                 clearButton(visible: !textInput.isEmpty) {
                     textInput = ""
                     applyText()
                 }
             }
             Toggle("Regex", isOn: $useRegex)
-            Button("Apply") { applyText() }
+                .onChange(of: useRegex) { _, _ in applyText() }
         }
     }
 
@@ -238,7 +255,6 @@ struct ColumnFilterPopover: View {
                     applyAddressText()
                 }
             }
-            Button("Apply") { applyAddressText() }
         }
     }
 
@@ -268,14 +284,37 @@ struct ColumnFilterPopover: View {
                 Text("Custom (Fixed)").tag(TimeRangeSpec.Mode.customFixed)
                 Text("Custom (Last)").tag(TimeRangeSpec.Mode.customLast)
             }
-            .onChange(of: tspec.mode) { _, _ in applyTimeSpec() }
+            .onChange(of: tspec.mode) { _, newMode in
+                if newMode == .customFixed {
+                    let now = Date()
+                    if tspec.fromDate == nil { tspec.fromDate = now }
+                    if tspec.toDate == nil { tspec.toDate = now }
+                }
+                applyTimeSpec()
+            }
             if tspec.mode == .customFixed {
-                DatePicker("From", selection: Binding(
-                    get: { tspec.fromDate ?? Date() },
-                    set: { tspec.fromDate = $0; applyTimeSpec() }))
-                DatePicker("To", selection: Binding(
-                    get: { tspec.toDate ?? Date() },
-                    set: { tspec.toDate = $0; applyTimeSpec() }))
+                Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 8) {
+                    GridRow(alignment: .center) {
+                        Text("From")
+                        nullableDateTimeCell(
+                            date: Binding(
+                                get: { tspec.fromDate },
+                                set: { tspec.fromDate = $0; applyTimeSpec() }
+                            ),
+                            placeholder: String(localized: "Any start")
+                        )
+                    }
+                    GridRow(alignment: .center) {
+                        Text("To")
+                        nullableDateTimeCell(
+                            date: Binding(
+                                get: { tspec.toDate },
+                                set: { tspec.toDate = $0; applyTimeSpec() }
+                            ),
+                            placeholder: String(localized: "Any end")
+                        )
+                    }
+                }
             }
             if tspec.mode == .customLast {
                 HStack {
@@ -294,7 +333,44 @@ struct ColumnFilterPopover: View {
                     .frame(width: 90)
                 }
             }
-            Button("Apply") { applyTimeSpec() }
+        }
+    }
+
+    @ViewBuilder
+    private func nullableDateTimeCell(date: Binding<Date?>, placeholder: String) -> some View {
+        HStack(spacing: 6) {
+            if let current = date.wrappedValue {
+                let dateBinding = Binding<Date>(
+                    get: { current },
+                    set: { date.wrappedValue = $0 }
+                )
+                DatePicker("", selection: dateBinding, displayedComponents: .date)
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                DatePicker("", selection: dateBinding, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                    .environment(\.locale, Self.hour24Locale)
+            } else {
+                Text(placeholder)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Spacer(minLength: 0)
+            Button {
+                date.wrappedValue = Date()
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+            }
+            .buttonStyle(.borderless)
+            .help(String(localized: "Reset to now"))
+            Button {
+                date.wrappedValue = nil
+            } label: {
+                Image(systemName: "xmark.circle")
+            }
+            .buttonStyle(.borderless)
+            .help(String(localized: "Clear"))
         }
     }
 

@@ -116,7 +116,7 @@ jobs:
           DMG_PATH: ${{ steps.hash.outputs.dmg_path }}
         run: gh release upload "$TAG" "$DMG_PATH" --clobber
 
-      - name: Sign update + refresh appcast
+      - name: Sign update + refresh appcast + bump project.yml
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -126,6 +126,8 @@ jobs:
         if: env.SPARKLE_PRIVATE_KEY != ''
         run: |
           set -euo pipefail
+          BUILD_NUMBER="$(TZ=Asia/Seoul date +%Y%m%d)"
+          export BUILD_NUMBER
           SPARKLE_VER="2.6.4"
           curl -sSL -o /tmp/sparkle.tar.xz \
             "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz"
@@ -149,6 +151,9 @@ jobs:
           sig      = os.environ["SIG_FRAGMENT"]
           dmg_url  = os.environ["DMG_URL"]
           pubdate  = os.environ["PUBDATE"]
+          build    = os.environ["BUILD_NUMBER"]
+
+          # appcast.xml: append/replace the item for this version.
           item = (
               "    <item>\n"
               f"      <title>Version {version}</title>\n"
@@ -162,24 +167,34 @@ jobs:
               f'      <description><![CDATA[See <a href="https://github.com/UsedPorts/UsedPorts/releases/tag/{tag}">release notes</a>.]]></description>\n'
               "    </item>\n"
           )
-          path = pathlib.Path("appcast.xml")
-          xml = path.read_text(encoding="utf-8")
-          # Idempotent: drop any prior entry for this version.
+          ap = pathlib.Path("appcast.xml")
+          xml = ap.read_text(encoding="utf-8")
           xml = re.sub(
               r"\s*<item>\s*<title>Version " + re.escape(version) + r"</title>.*?</item>\s*",
               "\n",
               xml, flags=re.DOTALL)
           xml = xml.replace("</channel>", item + "  </channel>")
-          path.write_text(xml, encoding="utf-8")
+          ap.write_text(xml, encoding="utf-8")
+
+          # project.yml: bump the baseline so it matches what CI just stamped.
+          py = pathlib.Path("project.yml")
+          text = py.read_text(encoding="utf-8")
+          text = re.sub(
+              r'(CFBundleShortVersionString:\s*)"[^"]*"',
+              rf'\1"{version}"', text)
+          text = re.sub(
+              r'(CFBundleVersion:\s*)"[^"]*"',
+              rf'\1"{build}"', text)
+          py.write_text(text, encoding="utf-8")
           PY
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add appcast.xml
+          git add appcast.xml project.yml
           if git diff --cached --quiet; then
-            echo "appcast.xml already up to date"
+            echo "appcast.xml and project.yml already up to date"
           else
-            git commit -m "appcast: usedports ${VERSION}"
+            git commit -m "release ${VERSION}: appcast + project.yml baseline"
             git push origin HEAD:main
           fi
 

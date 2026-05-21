@@ -50,7 +50,28 @@ jobs:
           APP_SRC="$BUILD_DIR/Build/Products/Release/UsedPorts.app"
           [[ -d "$APP_SRC" ]] || { echo "build did not produce $APP_SRC" >&2; exit 1; }
 
-          codesign --force --deep --sign - --options runtime "$APP_SRC"
+          # Bottom-up ad-hoc re-sign. Sparkle ships its framework signed with
+          # the Sparkle project's Team ID; we strip that and re-sign with the
+          # host's identity (`-` = ad-hoc, no Team ID). `codesign --sign --deep`
+          # is deprecated since macOS Big Sur, so each nested signable is
+          # signed explicitly, inner-most first.
+          SPARKLE_VER="$APP_SRC/Contents/Frameworks/Sparkle.framework/Versions/Current"
+          for xpc in "$SPARKLE_VER"/XPCServices/*.xpc; do
+            [[ -e "$xpc" ]] || continue
+            codesign --force --sign - --options runtime "$xpc"
+          done
+          codesign --force --sign - --options runtime "$SPARKLE_VER/Updater.app"
+          codesign --force --sign - --options runtime "$SPARKLE_VER/Autoupdate"
+          codesign --force --sign - --options runtime \
+            "$APP_SRC/Contents/Frameworks/Sparkle.framework"
+          codesign --force --sign - --options runtime "$APP_SRC/Contents/Resources/uph"
+          # Host bundle last, with entitlements attached. The disable-library-
+          # validation entitlement is required because Hardened Runtime's
+          # Library Validation otherwise refuses to load the ad-hoc Sparkle
+          # framework into this ad-hoc host (no Team ID match possible).
+          codesign --force --sign - --options runtime \
+            --entitlements App/UsedPorts.entitlements "$APP_SRC"
+          # --verify --deep is *not* deprecated, only --sign --deep is.
           codesign --verify --deep --strict "$APP_SRC"
 
           mkdir -p dist

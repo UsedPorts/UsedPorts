@@ -50,6 +50,16 @@ jobs:
           APP_SRC="$BUILD_DIR/Build/Products/Release/UsedPorts.app"
           [[ -d "$APP_SRC" ]] || { echo "build did not produce $APP_SRC" >&2; exit 1; }
 
+          # Stamp marketing version (from the tag) and build number (date in
+          # Asia/Seoul) into the bundle's Info.plist. This MUST happen before
+          # codesign — codesign seals Info.plist, so any later edit would
+          # invalidate the signature.
+          INFO_PLIST="$APP_SRC/Contents/Info.plist"
+          BUILD_NUMBER="$(TZ=Asia/Seoul date +%Y%m%d)"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$INFO_PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$INFO_PLIST"
+          echo "Stamped: CFBundleShortVersionString=$VERSION CFBundleVersion=$BUILD_NUMBER"
+
           # Bottom-up ad-hoc re-sign. Sparkle ships its framework signed with
           # the Sparkle project's Team ID; we strip that and re-sign with the
           # host's identity (`-` = ad-hoc, no Team ID). `codesign --sign --deep`

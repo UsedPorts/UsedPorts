@@ -17,7 +17,7 @@ brew install --cask usedports
 ### Manual download
 Grab the latest `.zip` from the [Releases](https://github.com/UsedPorts/UsedPorts/releases) page, unzip, and move `UsedPorts.app` to `/Applications`.
 
-On first launch, if Gatekeeper blocks the app, right-click → "Open" once to allow it.
+On first launch macOS will block the app as "unidentified developer". Allow it via **System Settings → Privacy & Security**, scroll to the bottom, and click **Open Anyway** next to the UsedPorts notice.
 
 ## Build
 
@@ -147,4 +147,4 @@ The app uses [Sparkle 2.x](https://sparkle-project.org/). Updates are pulled fro
 
 - App Sandbox is disabled (needs to run external commands and signal other PIDs)
 - Code signing: ad-hoc, Hardened Runtime on, no notarization (local builds only)
-- Gatekeeper may warn on first launch — right-click → Open once to allow it
+- Gatekeeper blocks the app on first launch — allow it via System Settings → Privacy & Security → Open Anyway

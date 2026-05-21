@@ -162,8 +162,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private func installStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
-            button.image = NSImage(systemSymbolName: "network",
-                                   accessibilityDescription: "UsedPorts")
+            let menuBarImage = NSImage(named: "MenuBarIcon")
+            menuBarImage?.isTemplate = true
+            menuBarImage?.accessibilityDescription = "UsedPorts"
+            button.image = menuBarImage
             button.target = self
             button.action = #selector(togglePopover(_:))
         }

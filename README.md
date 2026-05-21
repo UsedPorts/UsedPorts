@@ -1,6 +1,10 @@
+<img src="assets/icon-master.svg" alt="UsedPorts" width="96">
+
 # UsedPorts
 
 A SwiftUI macOS app that lists and manages TCP/UDP ports in use on your system.
+
+<img src="assets/UsedPorts-App.png" alt="UsedPorts main window" width="720">
 
 ## Install
 
@@ -47,6 +51,16 @@ xcodebuild test -project UsedPorts.xcodeproj -scheme UsedPorts -destination 'pla
 - Kill result polling confirms the process actually exited — escalates to SIGKILL if it doesn't
 - sudo mode: authenticate once, stays active until the app quits (uses the root helper `uph`)
 - Auto/manual refresh toggle
+
+### Menu bar
+
+A compact status item shows pinned ports at a glance:
+
+<img src="assets/UsedPorts-menubar.png" alt="Status item" width="240">
+
+Click it to open the popover — search, pinned section, and the full process tree:
+
+<img src="assets/UsedPorts-popover.png" alt="Menu bar popover" width="360">
 
 ## Settings reference
 

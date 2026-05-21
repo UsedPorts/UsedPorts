@@ -34,8 +34,10 @@ struct MenuBarContent: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Image(systemName: "network")
-                .font(.title3)
+            Image("MenuBarIcon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 22, height: 22)
                 .foregroundStyle(.tint)
             VStack(alignment: .leading, spacing: 0) {
                 Text("UsedPorts")

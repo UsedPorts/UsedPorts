@@ -115,8 +115,9 @@ Only matters when the toggle is on. Rows differing only by file descriptor (`lso
 
 | Setting | Behavior |
 |---|---|
-| Automatically check for updates | Sparkle background check; uses the repo's `appcast.xml`. |
+| Automatically check for updates | Daily background check via `brew outdated`. Only shown when UsedPorts is managed by Homebrew. |
 | Check Now | Manual check. Disabled while a check is in flight. |
+| Update to … | Runs `brew upgrade usedports` and relaunches the app. Shown when a newer version is available. |
 
 ### Help
 
@@ -147,7 +148,11 @@ Tests/              — XCTest unit + integration tests
 
 ## Auto-update
 
-The app uses [Sparkle 2.x](https://sparkle-project.org/). Updates are pulled from `appcast.xml` published at the repo root; Settings → Updates lets you toggle auto-checks or run "Check Now".
+UsedPorts is distributed through Homebrew, so updates go through Homebrew too —
+there is no embedded updater framework. When the app detects it was installed
+via Homebrew, **Settings → Updates** can check (`brew outdated`) and install
+(`brew upgrade usedports`, then relaunch). You can always update from a terminal
+with `brew upgrade usedports`.
 
 ## Notes
 

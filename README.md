@@ -8,16 +8,22 @@ A SwiftUI macOS app that lists and manages TCP/UDP ports in use on your system.
 
 ## Install
 
-### Homebrew (recommended)
 ```sh
-brew tap UsedPorts/tap
-brew install --cask usedports
+brew install usedports/tap/usedports
 ```
 
-### Manual download
-Grab the latest `.zip` from the [Releases](https://github.com/UsedPorts/UsedPorts/releases) page, unzip, and move `UsedPorts.app` to `/Applications`.
+This builds (or pours a prebuilt bottle for) UsedPorts and links it into
+`~/Applications`. Because Homebrew installs are not quarantined, there is no
+Gatekeeper "Open Anyway" prompt.
 
-On first launch macOS will block the app as "unidentified developer". Allow it via **System Settings → Privacy & Security**, scroll to the bottom, and click **Open Anyway** next to the UsedPorts notice.
+## Update
+
+Use **Settings → Updates → Check Now** (then **Update to …**), or from a
+terminal:
+
+```sh
+brew upgrade usedports
+```
 
 ## Build
 
@@ -147,4 +153,7 @@ The app uses [Sparkle 2.x](https://sparkle-project.org/). Updates are pulled fro
 
 - App Sandbox is disabled (needs to run external commands and signal other PIDs)
 - Code signing: ad-hoc, Hardened Runtime on, no notarization (local builds only)
-- Gatekeeper blocks the app on first launch — allow it via System Settings → Privacy & Security → Open Anyway
+
+## License
+
+MIT — see [LICENSE](LICENSE).

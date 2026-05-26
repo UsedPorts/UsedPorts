@@ -76,20 +76,40 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Updates") {
-                Toggle("Automatically check for updates", isOn: $updater.autoCheckEnabled)
-                HStack {
-                    Button("Check Now") { updater.checkNow() }
-                        .disabled(updater.isChecking || !updater.canCheckNow)
-                    Spacer()
-                    if let last = updater.lastCheckDate {
-                        Text("Last checked: \(last.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text("Not checked yet")
+                Text("Current version: \(updater.currentVersion)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if updater.isManagedByBrew {
+                    Toggle("Automatically check for updates", isOn: $updater.autoCheckEnabled)
+                    HStack {
+                        Button("Check Now") { updater.checkNow() }
+                            .disabled(!updater.canCheckNow)
+                        if updater.updateAvailable, let latest = updater.latestVersion {
+                            Button("Update to \(latest)") { updater.installUpdate() }
+                                .disabled(updater.isInstalling)
+                        }
+                        Spacer()
+                        if let last = updater.lastCheckDate {
+                            Text("Last checked: \(last.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    if updater.updateAvailable {
+                        Text("A new version is available.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    if updater.lastCheckFailed {
+                        Text("Last update check failed.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Text("UsedPorts is not managed by Homebrew. Install via Homebrew to enable in-app updates.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Homebrew Install Instructions…") { updater.openReleasesPage() }
                 }
             }
             Section("Help") {

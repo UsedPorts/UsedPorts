@@ -102,6 +102,16 @@
     "3000  ·  1000~2000  ·  5000+  ·  ~80" : {
 
     },
+    "A new version is available." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 버전이 있습니다."
+          }
+        }
+      }
+    },
     "Active" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -399,6 +409,16 @@
         }
       }
     },
+    "Current version: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현재 버전: %@"
+          }
+        }
+      }
+    },
     "Custom (Fixed)" : {
       "localizations" : {
         "ko" : {
@@ -654,6 +674,17 @@
         }
       }
     },
+    "Homebrew Install Instructions…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homebrew 설치 방법…"
+          }
+        }
+      }
+    },
     "hour" : {
       "localizations" : {
         "ko" : {
@@ -814,6 +845,16 @@
         }
       }
     },
+    "Last update check failed." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마지막 업데이트 확인에 실패했습니다."
+          }
+        }
+      }
+    },
     "Launch at Login" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -869,6 +910,7 @@
       }
     },
     "Not checked yet" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -1398,6 +1440,17 @@
         }
       }
     },
+    "Update to %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@(으)로 업데이트"
+          }
+        }
+      }
+    },
     "Updates" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1422,6 +1475,16 @@
     },
     "UsedPorts" : {
 
+    },
+    "UsedPorts is not managed by Homebrew. Install via Homebrew to enable in-app updates." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UsedPorts가 Homebrew로 설치되지 않았습니다. 인앱 업데이트를 사용하려면 Homebrew로 설치하세요."
+          }
+        }
+      }
     },
     "User:" : {
       "localizations" : {

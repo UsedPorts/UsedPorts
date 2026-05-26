@@ -38,4 +38,27 @@ final class BrewUpdaterTests: XCTestCase {
         XCTAssertFalse(updater.canCheckNow)
         XCTAssertFalse(updater.isManagedByBrew)
     }
+    func test_install_runsUpgradeAndRelaunches() async {
+        let runner = SeqRunner()
+        runner.responses = [(0, "")]
+        var relaunched = false
+        let updater = BrewUpdater(runner: runner, brewPath: "/opt/homebrew/bin/brew",
+                                  formula: "usedports", relaunchHandler: { relaunched = true })
+        await updater.installUpdateAsync()
+        XCTAssertEqual(runner.calls.count, 1)
+        XCTAssertEqual(runner.calls.first?.0, "/opt/homebrew/bin/brew")
+        XCTAssertEqual(runner.calls.first?.1, ["upgrade", "usedports"])
+        XCTAssertTrue(relaunched)
+        XCTAssertFalse(updater.isInstalling)
+    }
+    func test_install_failureDoesNotRelaunch() async {
+        let runner = SeqRunner()
+        runner.responses = [(1, "")]
+        var relaunched = false
+        let updater = BrewUpdater(runner: runner, brewPath: "/opt/homebrew/bin/brew",
+                                  formula: "usedports", relaunchHandler: { relaunched = true })
+        await updater.installUpdateAsync()
+        XCTAssertFalse(relaunched)
+        XCTAssertFalse(updater.isInstalling)
+    }
 }

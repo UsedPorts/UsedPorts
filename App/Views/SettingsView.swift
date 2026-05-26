@@ -3,7 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var viewModel: PortListViewModel
-    @ObservedObject var updater: UpdateChecker
+    @ObservedObject var updater: BrewUpdater
     @ObservedObject var logStore: LogStore
 
     var body: some View {

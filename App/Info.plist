@@ -29,17 +29,6 @@
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<false/>
-	<key>SUAutomaticallyUpdate</key>
-	<false/>
-	<key>SUEnableAutomaticChecks</key>
-	<true/>
-	<key>SUEnableInstallerLauncherService</key>
-	<true/>
-	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/UsedPorts/UsedPorts/main/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>UzmLq1EqhTWNyM9ufQ1e7mQLT7P3LO5NMzArt0Wwnzo=</string>
-	<key>SUScheduledCheckInterval</key>
-	<integer>86400</integer>
+
 </dict>
 </plist>

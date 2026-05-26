@@ -12,7 +12,7 @@ final class AppHostStore: ObservableObject {
     let privilege: PrivilegeManager
     let settings: AppSettings
     let toasts: ToastCenter
-    let updater: UpdateChecker
+    let updater: BrewUpdater
     let logStore: LogStore
 
     private var refreshCancellables: Set<AnyCancellable> = []
@@ -24,7 +24,7 @@ final class AppHostStore: ObservableObject {
         let viewModel = PortListViewModel(scanner: scanner, toasts: toasts)
         let privilege = PrivilegeManager(scanner: scanner, toasts: toasts, logStore: logStore)
         let settings = AppSettings()
-        let updater = UpdateChecker()
+        let updater = BrewUpdater()
         self.scanner = scanner
         self.viewModel = viewModel
         self.privilege = privilege
@@ -91,8 +91,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         installStatusItem()
         observeVisibility()
         observePinnedPorts()
-        // Sparkle's scheduler handles periodic auto-checks based on the
-        // `automaticallyChecksForUpdates` flag — no explicit call required at launch.
     }
 
     /// Updates the status text next to the menu bar icon (pinned port state) whenever pinnedPorts,

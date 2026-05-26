@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import AppKit
 
 @MainActor
 public final class PortListViewModel: ObservableObject {
@@ -21,6 +22,10 @@ public final class PortListViewModel: ObservableObject {
     private var augTask: Task<Void, Never>?
     private let augmenter: ProcessAugmenting
 
+    /// Caches per-process app icons for the optional process-icon feature
+    /// (AppSettings.showProcessIcons). Pruned each poll in applyBatch.
+    let iconProvider = ProcessIconProvider()
+
     private let customizationKey = "UsedPorts.tableColumnCustomization"
 
     public init(scanner: PortScanner, toasts: ToastCenter? = nil, augmenter: ProcessAugmenting = ProcessAugmenter()) {
@@ -31,6 +36,12 @@ public final class PortListViewModel: ObservableObject {
            let decoded = try? JSONDecoder().decode(TableColumnCustomization<PortTableRow>.self, from: data) {
             self.columnCustomization = decoded
         }
+    }
+
+    /// App icon for a pid, or nil for CLI/daemon processes. Cache-backed; lookups don't
+    /// trigger re-renders (the cache is not @Published).
+    public func processIcon(forPID pid: pid_t) -> NSImage? {
+        iconProvider.icon(forPID: pid)
     }
 
     public func persistCustomization() {
@@ -283,6 +294,7 @@ public final class PortListViewModel: ObservableObject {
         rawEntries = batch
         let liveIds = Set(batch.map(\.id))
         let livePids = Set(batch.map { $0.pid })
+        iconProvider.prune(livePIDs: livePids)
         // Group rows live under "group-{pid}" ids; they stay selected as long as the PID
         // still has any port in the batch. Leaf ids must match an entry id exactly.
         var stillAlive: Set<PortEntry.ID> = []

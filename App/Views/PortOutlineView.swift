@@ -17,6 +17,8 @@ struct PortOutlineView: NSViewRepresentable {
     @Binding var selection: Set<PortEntry.ID>
     @Binding var sort: SortSpec
     @Binding var expandedGroups: Set<Int32>
+    var showProcessIcons: Bool = false
+    var iconForPID: (pid_t) -> NSImage? = { _ in nil }
 
     // MARK: - Lifecycle
 
@@ -225,7 +227,9 @@ struct PortOutlineView: NSViewRepresentable {
             let identifier = NSUserInterfaceItemIdentifier("port-cell-\(spec.id)")
             let cell = (outlineView.makeView(withIdentifier: identifier, owner: self) as? HostingCell)
                 ?? HostingCell(identifier: identifier)
-            cell.update(row: item.row, column: spec)
+            let showIcon = spec == .process && parent.showProcessIcons
+            let icon = showIcon ? parent.iconForPID(item.row.pid) : nil
+            cell.update(row: item.row, column: spec, showIcon: showIcon, icon: icon)
             return cell
         }
     }
@@ -254,14 +258,16 @@ private final class HostingCell: NSTableCellView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func update(row: PortTableRow, column: PortOutlineColumn) {
-        host.rootView = PortOutlineCellContent(row: row, column: column)
+    func update(row: PortTableRow, column: PortOutlineColumn, showIcon: Bool = false, icon: NSImage? = nil) {
+        host.rootView = PortOutlineCellContent(row: row, column: column, showIcon: showIcon, icon: icon)
     }
 }
 
 private struct PortOutlineCellContent: View {
     let row: PortTableRow
     let column: PortOutlineColumn
+    var showIcon: Bool = false
+    var icon: NSImage? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -269,6 +275,16 @@ private struct PortOutlineCellContent: View {
                 Image(systemName: "pin.fill")
                     .font(.caption2)
                     .foregroundStyle(Color.accentColor)
+            }
+            if showIcon {
+                if let icon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 15, height: 15)
+                } else {
+                    Color.clear.frame(width: 15, height: 15)
+                }
             }
             Text(column.text(for: row))
                 .font(column == .port

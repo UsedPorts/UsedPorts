@@ -13,6 +13,7 @@ struct SettingsView: View {
                 Toggle("Hide repeated process names", isOn: $settings.menuBarGroupSamePid)
                 Toggle("Hide duplicate rows", isOn: $settings.hideDuplicateRows)
                 Toggle("Group by PID", isOn: $settings.groupByPid)
+                Toggle("Show process icons", isOn: $settings.showProcessIcons)
             }
             Section("Menu Bar") {
                 Toggle("Show in Menu Bar", isOn: $settings.showMenuBar)

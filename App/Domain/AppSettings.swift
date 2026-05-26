@@ -17,6 +17,7 @@ public final class AppSettings: ObservableObject {
     private static let menuBarGroupSamePidKey = "settings.menuBarGroupSamePid"
     private static let hideDuplicateRowsKey = "settings.hideDuplicateRows"
     private static let groupByPidKey = "settings.groupByPid"
+    private static let showProcessIconsKey = "settings.showProcessIcons"
     private static let refreshIntervalKey = "settings.refreshIntervalSeconds"
     private static let backgroundRefreshModeKey = "settings.backgroundRefreshMode"
 
@@ -85,6 +86,16 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    /// When true, rows show the owning process's app icon next to its name (menu bar list and
+    /// main table). GUI apps resolve to their icon; pure CLI/daemon processes have none and
+    /// render a blank slot. On by default. See ProcessIconProvider.
+    @Published public var showProcessIcons: Bool {
+        didSet {
+            guard oldValue != showProcessIcons else { return }
+            UserDefaults.standard.set(showProcessIcons, forKey: Self.showProcessIconsKey)
+        }
+    }
+
     /// Base poll interval for the lsof scanner, in seconds.
     @Published public var refreshIntervalSeconds: Double {
         didSet {
@@ -145,6 +156,11 @@ public final class AppSettings: ObservableObject {
             self.groupByPid = true
         } else {
             self.groupByPid = UserDefaults.standard.bool(forKey: Self.groupByPidKey)
+        }
+        if UserDefaults.standard.object(forKey: Self.showProcessIconsKey) == nil {
+            self.showProcessIcons = true
+        } else {
+            self.showProcessIcons = UserDefaults.standard.bool(forKey: Self.showProcessIconsKey)
         }
         if UserDefaults.standard.object(forKey: Self.refreshIntervalKey) == nil {
             self.refreshIntervalSeconds = 3.0

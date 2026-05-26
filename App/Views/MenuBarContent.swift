@@ -170,6 +170,8 @@ struct MenuBarContent: View {
         PortRow(
             row: row,
             showProcessLine: !item.hideProcess,
+            showIcon: settings.showProcessIcons,
+            icon: settings.showProcessIcons ? viewModel.processIcon(forPID: pid_t(row.pid)) : nil,
             showKillButton: true,
             leadingIndent: 0,
             isPinned: settings.pinnedPorts.contains(row.port),
@@ -197,6 +199,8 @@ struct MenuBarContent: View {
             processName: group.processName,
             pid: group.pid,
             portCount: group.children.count,
+            showIcon: settings.showProcessIcons,
+            icon: settings.showProcessIcons ? viewModel.processIcon(forPID: pid_t(group.pid)) : nil,
             isConfirming: confirming,
             onKillRequest: { confirmKillRowId = group.id }
         )
@@ -212,6 +216,8 @@ struct MenuBarContent: View {
             PortRow(
                 row: child,
                 showProcessLine: false,
+                showIcon: false,
+                icon: nil,
                 showKillButton: false,
                 leadingIndent: 16,
                 isPinned: settings.pinnedPorts.contains(child.port),
@@ -560,9 +566,31 @@ private enum MenuBarRow: Identifiable, Equatable {
 /// of a `PortGroupHeader`. The header role hides the per-row process line and kill button so the
 /// PID-level controls live on the header; both roles share the same port/proto/state line so the
 /// list keeps a consistent visual rhythm between ON and OFF.
+/// Process app icon, or a same-size transparent slot when the process has none
+/// (CLI/daemon), so process names stay aligned whether or not an icon resolves.
+private struct ProcessIconBadge: View {
+    let icon: NSImage?
+    let size: CGFloat
+
+    var body: some View {
+        Group {
+            if let icon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: size, height: size)
+            } else {
+                Color.clear.frame(width: size, height: size)
+            }
+        }
+    }
+}
+
 private struct PortRow: View {
     let row: PortRowData
     let showProcessLine: Bool
+    let showIcon: Bool
+    let icon: NSImage?
     let showKillButton: Bool
     let leadingIndent: CGFloat
     let isPinned: Bool
@@ -588,11 +616,14 @@ private struct PortRow: View {
                     }
                 }
                 if showProcessLine {
-                    Text(processLine)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                    HStack(spacing: 4) {
+                        if showIcon { ProcessIconBadge(icon: icon, size: 13) }
+                        Text(processLine)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
                 }
             }
             Spacer(minLength: 4)
@@ -679,6 +710,8 @@ private struct PortGroupHeader: View {
     let processName: String
     let pid: Int
     let portCount: Int
+    let showIcon: Bool
+    let icon: NSImage?
     let isConfirming: Bool
     let onKillRequest: () -> Void
 
@@ -686,6 +719,7 @@ private struct PortGroupHeader: View {
 
     var body: some View {
         HStack(spacing: 6) {
+            if showIcon { ProcessIconBadge(icon: icon, size: 15) }
             Text(processName)
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(.primary)

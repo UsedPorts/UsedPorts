@@ -1281,6 +1281,17 @@
         }
       }
     },
+    "Show process icons" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프로세스 아이콘 표시"
+          }
+        }
+      }
+    },
     "Showing / Total" : {
       "extractionState" : "stale",
       "localizations" : {

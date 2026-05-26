@@ -40,8 +40,13 @@ struct MenuBarContent: View {
                 .frame(width: 22, height: 22)
                 .foregroundStyle(.tint)
             VStack(alignment: .leading, spacing: 0) {
-                Text("UsedPorts")
-                    .font(.headline)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("UsedPorts")
+                        .font(.headline)
+                    Text(AppVersion.display)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
                 Text(headerSubtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)

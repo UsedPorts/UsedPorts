@@ -41,9 +41,7 @@ public final class BrewUpdater: NSObject, ObservableObject {
     public var isManagedByBrew: Bool { brewPath != nil }
     public var canCheckNow: Bool { brewPath != nil && !isChecking }
 
-    public var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
-    }
+    public var currentVersion: String { AppVersion.short }
 
     public func checkNow() { Task { await checkNowAsync() } }
 

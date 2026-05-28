@@ -25,6 +25,16 @@ public struct CommandRunner: CommandRunning {
         process.executableURL = URL(fileURLWithPath: path)
         process.arguments = args
 
+        // Force the C locale so tools like `ps -o lstart=` emit a stable,
+        // English-formatted timestamp regardless of how the app was launched.
+        // Finder/Homebrew launches inherit the GUI session locale (e.g.
+        // ko_KR.UTF-8), which our parsers can't read; Xcode launches happen to
+        // inherit a neutral locale, which is why this only broke in release.
+        // LC_ALL overrides LANG/LC_TIME.
+        var env = ProcessInfo.processInfo.environment
+        env["LC_ALL"] = "C"
+        process.environment = env
+
         let outPipe = Pipe()
         let errPipe = Pipe()
         process.standardOutput = outPipe

@@ -1,5 +1,10 @@
 name: Release
 
+# Triggered when a GitHub release is published. The release body becomes the
+# CHANGELOG entry; the tag name (vX.Y.Z) sets the version. The workflow bumps
+# project.yml + CHANGELOG on the default branch, retargets the tag at that
+# commit, then builds and publishes the Homebrew bottle for it.
+
 on:
   release:
     types: [published]
@@ -11,7 +16,11 @@ jobs:
   bottle:
     runs-on: macos-15   # arm64, ships Xcode 26 (macOS 26 SDK)
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
 
       - name: Select Xcode
         run: |
@@ -31,6 +40,28 @@ jobs:
           TAG="$REF"; VERSION="${TAG#v}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Sync version + changelog, retarget tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          NOTES: ${{ github.event.release.body }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$NOTES" > "${RUNNER_TEMP}/notes.md"
+          .github/scripts/cut-release.sh "${VERSION}" "${RUNNER_TEMP}/notes.md"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- project.yml App/Info.plist CHANGELOG.md; then
+            git add project.yml App/Info.plist CHANGELOG.md
+            git commit -m "chore(release): ${TAG}"
+            git push origin "HEAD:${DEFAULT_BRANCH}"
+          fi
+          # Point the release tag at the bumped commit so the bottle is built
+          # from the version we just stamped.
+          git tag -f "${TAG}"
+          git push -f origin "${TAG}"
 
       - name: Source tarball SHA256
         id: src

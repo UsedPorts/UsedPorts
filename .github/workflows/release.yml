@@ -9,13 +9,13 @@ permissions:
 
 jobs:
   bottle:
-    runs-on: macos-14   # arm64
+    runs-on: macos-15   # arm64, ships Xcode 26 (macOS 26 SDK)
     steps:
       - uses: actions/checkout@v4
 
       - name: Select Xcode
         run: |
-          XCODE="$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)"
+          XCODE="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
           XCODE="${XCODE:-/Applications/Xcode.app}"
           sudo xcode-select -s "$XCODE"
           xcodebuild -version
@@ -73,7 +73,7 @@ jobs:
           brew bottle --json --no-rebuild \
             --root-url="https://github.com/UsedPorts/UsedPorts/releases/download/${TAG}" \
             local/bottle/usedports
-          BOTTLE_FILE="$(ls usedports--*.arm64_sonoma.bottle.tar.gz)"
+          BOTTLE_FILE="$(ls usedports--*.arm64_sequoia.bottle.tar.gz)"
           UPLOAD_NAME="$(echo "$BOTTLE_FILE" | sed 's/--/-/')"
           mv "$BOTTLE_FILE" "$UPLOAD_NAME"
           BOTTLE_SHA="$(shasum -a 256 "$UPLOAD_NAME" | awk '{print $1}')"
@@ -94,7 +94,7 @@ jobs:
         run: |
           F="tap/Formula/usedports.rb"
           /usr/bin/sed -i '' -E \
-            "s#(arm64_sonoma: \")[^\"]*(\")#\1${BOTTLE_SHA}\2#" "$F"
+            "s#(arm64_sequoia: \")[^\"]*(\")#\1${BOTTLE_SHA}\2#" "$F"
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

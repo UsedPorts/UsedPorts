@@ -44,6 +44,14 @@ public struct HelperResponse: Codable, Equatable {
     }
 }
 
+/// Signals the privileged (root) helper is permitted to deliver. The app only
+/// ever sends SIGTERM/SIGKILL; the helper rejects anything else as
+/// defense-in-depth, so the FIFO can't be used to send arbitrary signals to
+/// arbitrary PIDs as root.
+public func isAllowedKillSignal(_ sig: Int32) -> Bool {
+    sig == SIGTERM || sig == SIGKILL
+}
+
 public struct HelperCodec {
     public static let encoder: JSONEncoder = {
         let e = JSONEncoder()

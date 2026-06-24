@@ -1,7 +1,21 @@
 import XCTest
+import Darwin
 @testable import UsedPorts
 
 final class HelperProtocolTests: XCTestCase {
+    func test_isAllowedKillSignal_acceptsTermAndKill() {
+        XCTAssertTrue(isAllowedKillSignal(SIGTERM))   // 15
+        XCTAssertTrue(isAllowedKillSignal(SIGKILL))   // 9
+    }
+
+    func test_isAllowedKillSignal_rejectsEverythingElse() {
+        XCTAssertFalse(isAllowedKillSignal(0))         // null signal (liveness probe)
+        XCTAssertFalse(isAllowedKillSignal(SIGSTOP))
+        XCTAssertFalse(isAllowedKillSignal(SIGHUP))
+        XCTAssertFalse(isAllowedKillSignal(SIGINT))
+        XCTAssertFalse(isAllowedKillSignal(99))
+    }
+
     func test_roundtrip_scanResponse() throws {
         let entry = PortEntry(id: "x", pid: 1, processName: "p", user: "u",
                               proto: .tcp, localAddress: "*", port: 80, state: "LISTEN")

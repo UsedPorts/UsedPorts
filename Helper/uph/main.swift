@@ -33,6 +33,10 @@ func handle(_ req: HelperRequest) async {
             writeResponse(HelperResponse(id: req.id, ok: false, message: "missing pid/sig"))
             return
         }
+        guard isAllowedKillSignal(sig) else {
+            writeResponse(HelperResponse(id: req.id, ok: false, message: "signal not allowed"))
+            return
+        }
         let r = Darwin.kill(pid, sig)
         if r == 0 {
             writeResponse(HelperResponse(id: req.id, ok: true))

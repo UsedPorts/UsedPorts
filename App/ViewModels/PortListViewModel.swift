@@ -20,6 +20,7 @@ public final class PortListViewModel: ObservableObject {
 
     private var augCache: [Int32: PortEntry] = [:]
     private var augTask: Task<Void, Never>?
+    private var isAugmenting = false
     private let augmenter: ProcessAugmenting
 
     /// Caches per-process app icons for the optional process-icon feature
@@ -255,10 +256,17 @@ public final class PortListViewModel: ObservableObject {
     }
 
     private func startAugmentation() {
-        augTask?.cancel()
+        // A pass is already running; let it finish rather than cancelling its
+        // in-flight subprocess work on every poll. The next poll restarts the
+        // pass, picking up any newly-appeared PIDs.
+        // ponytail: relies on augmenter.augment() always returning (CommandRunner
+        // times out at ~1s); a permanently hung augment would stall augmentation.
+        guard !isAugmenting else { return }
+        isAugmenting = true
         let entries = rawEntries
         augTask = Task { [weak self] in
             guard let self else { return }
+            defer { self.isAugmenting = false; self.augTask = nil }
             for entry in entries {
                 if Task.isCancelled { return }
                 if self.hasCache(for: entry.pid) { continue }

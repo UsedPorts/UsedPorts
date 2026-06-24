@@ -1,7 +1,48 @@
 import XCTest
 @testable import UsedPorts
 
+/// Counts augment calls and gates the very first call until released, so a test
+/// can observe whether a second augmentation pass is (incorrectly) started while
+/// the first is still in flight.
+final class GatedAugmenter: ProcessAugmenting, @unchecked Sendable {
+    private let lock = NSLock()
+    private var _count = 0
+    private var cont: CheckedContinuation<Void, Never>?
+    let firstCallReached = XCTestExpectation(description: "augment first call reached")
+
+    var count: Int { lock.lock(); defer { lock.unlock() }; return _count }
+
+    func augment(_ entry: PortEntry) async -> PortEntry {
+        lock.lock(); _count += 1; let n = _count; lock.unlock()
+        if n == 1 {
+            firstCallReached.fulfill()
+            await withCheckedContinuation { c in
+                lock.lock(); cont = c; lock.unlock()
+            }
+        }
+        var e = entry
+        e.executablePath = "/mock/\(entry.pid)"
+        return e
+    }
+
+    func release() {
+        lock.lock(); let c = cont; cont = nil; lock.unlock()
+        c?.resume()
+    }
+}
+
 final class PortListViewModelTests: XCTestCase {
+    /// Single-entry lsof -F fixture (pid 4821, port 3000).
+    static let oneEntryLsof = """
+    p4821
+    cnode
+    uname
+    f23
+    PTCP
+    n127.0.0.1:3000
+    TST=LISTEN
+    """
+
     func makeEntries() -> [PortEntry] {
         [
             PortEntry(id: "a", pid: 100, processName: "node", user: "name",
@@ -174,6 +215,26 @@ final class PortListViewModelTests: XCTestCase {
             to: entries)
         // only "new" within last 10 min
         XCTAssertEqual(r.map(\.id), ["new"])
+    }
+
+    // MARK: - Augmentation lifecycle
+
+    @MainActor
+    func test_augmentation_doesNotRestartWhileInFlight() async {
+        let runner = StubRunner()
+        runner.nextStdout = Self.oneEntryLsof
+        let scanner = PortScanner(runner: runner)
+        let aug = GatedAugmenter()
+        let vm = PortListViewModel(scanner: scanner, augmenter: aug)
+
+        try? await vm.refreshOnce()                 // starts a pass, gated on first call
+        await fulfillment(of: [aug.firstCallReached], timeout: 2)
+
+        try? await vm.refreshOnce()                 // must NOT start a second pass
+        for _ in 0..<5 { await Task.yield() }       // give an erroneous pass a chance to run
+
+        XCTAssertEqual(aug.count, 1, "augmentation must not restart while a pass is in flight")
+        aug.release()
     }
 
     func test_filterByTimeSpec_anyMatchesAll() {

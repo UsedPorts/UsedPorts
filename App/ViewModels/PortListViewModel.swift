@@ -283,9 +283,9 @@ public final class PortListViewModel: ObservableObject {
 
     private func storeAug(pid: Int32, entry: PortEntry) {
         augCache[pid] = entry
-        // Trigger a UI refresh by re-emitting rawEntries (publisher).
-        let snapshot = rawEntries
-        rawEntries = snapshot
+        // Surface the cache change to observers (augmentedEntries reads augCache)
+        // without copying the whole rawEntries array for every augmented PID.
+        objectWillChange.send()
     }
 
     private func effectiveInterval(base: TimeInterval) -> TimeInterval {

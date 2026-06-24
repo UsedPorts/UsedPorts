@@ -1,5 +1,16 @@
 import XCTest
+import Combine
 @testable import UsedPorts
+
+/// Fills augment fields synchronously, no gating.
+final class FillingAugmenter: ProcessAugmenting, @unchecked Sendable {
+    func augment(_ entry: PortEntry) async -> PortEntry {
+        var e = entry
+        e.executablePath = "/mock/exec"
+        e.cwd = "/mock/cwd"
+        return e
+    }
+}
 
 /// Counts augment calls and gates the very first call until released, so a test
 /// can observe whether a second augmentation pass is (incorrectly) started while
@@ -235,6 +246,27 @@ final class PortListViewModelTests: XCTestCase {
 
         XCTAssertEqual(aug.count, 1, "augmentation must not restart while a pass is in flight")
         aug.release()
+    }
+
+    @MainActor
+    func test_augmentation_notifiesObserversAndMerges() async {
+        let runner = StubRunner()
+        runner.nextStdout = Self.oneEntryLsof
+        let scanner = PortScanner(runner: runner)
+        let vm = PortListViewModel(scanner: scanner, augmenter: FillingAugmenter())
+
+        try? await vm.refreshOnce()   // populates rawEntries; augmentation pass is queued
+
+        // objectWillChange must fire when augmentation stores data (the pass
+        // hasn't run yet — MainActor is busy until we await below).
+        let exp = expectation(description: "augmentation notifies observers")
+        exp.assertForOverFulfill = false
+        var cancellables = Set<AnyCancellable>()
+        vm.objectWillChange.sink { _ in exp.fulfill() }.store(in: &cancellables)
+
+        await fulfillment(of: [exp], timeout: 2)
+        XCTAssertEqual(vm.augmentedEntries.first?.executablePath, "/mock/exec")
+        XCTAssertEqual(vm.augmentedEntries.first?.cwd, "/mock/cwd")
     }
 
     func test_filterByTimeSpec_anyMatchesAll() {

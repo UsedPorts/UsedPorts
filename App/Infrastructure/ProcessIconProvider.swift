@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 
 /// Resolves a process's app icon from its pid. Abstracted so the caching layer
 /// can be unit-tested without depending on live system processes.
@@ -27,16 +28,21 @@ public final class ProcessIconProvider {
     // nil is cached too, so CLI processes are not re-resolved every lookup.
     private var cache: [pid_t: NSImage?] = [:]
 
+    /// Shown for processes without their own app icon (CLI tools, daemons) so the
+    /// icon column is never blank — macOS's generic Unix-executable icon.
+    static let genericIcon: NSImage = NSWorkspace.shared.icon(for: .unixExecutable)
+
     public init(resolver: RunningAppIconResolving = SystemIconResolver()) {
         self.resolver = resolver
     }
 
-    /// Cache-first lookup. Resolves (and stores, including a nil result) on miss.
+    /// Cache-first lookup. Resolves (and caches, including a nil app-icon result) on
+    /// miss, then falls back to the generic icon so callers always get something to show.
     public func icon(forPID pid: pid_t) -> NSImage? {
-        if let cached = cache[pid] { return cached }
+        if let cached = cache[pid] { return cached ?? Self.genericIcon }
         let resolved = resolver.icon(forPID: pid)
         cache[pid] = resolved
-        return resolved
+        return resolved ?? Self.genericIcon
     }
 
     /// Drop cached entries whose pid is no longer present in the latest snapshot.

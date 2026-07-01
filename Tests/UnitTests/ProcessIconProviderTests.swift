@@ -25,14 +25,15 @@ final class ProcessIconProviderTests: XCTestCase {
         XCTAssertEqual(fake.calls, [42], "resolver should be hit exactly once per pid")
     }
 
-    func test_nilResult_isCached() {
-        let fake = FakeResolver()           // pid 7 has no icon (CLI process)
+    func test_noAppIcon_fallsBackToGenericIcon_andCaches() {
+        let fake = FakeResolver()           // pid 7 has no app icon (CLI process)
         let provider = ProcessIconProvider(resolver: fake)
 
-        XCTAssertNil(provider.icon(forPID: 7))
-        XCTAssertNil(provider.icon(forPID: 7))
+        // No app icon → generic fallback (not nil) so the icon column isn't blank.
+        XCTAssertTrue(provider.icon(forPID: 7) === ProcessIconProvider.genericIcon)
+        XCTAssertTrue(provider.icon(forPID: 7) === ProcessIconProvider.genericIcon)
 
-        XCTAssertEqual(fake.calls, [7], "nil must be cached so CLI pids aren't re-resolved")
+        XCTAssertEqual(fake.calls, [7], "nil app-icon must be cached so CLI pids aren't re-resolved")
     }
 
     func test_prune_dropsDeadPIDs_keepsSurvivors() {

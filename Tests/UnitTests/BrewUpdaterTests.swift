@@ -13,6 +13,24 @@ final class SeqRunner: @unchecked Sendable, CommandRunning {
 
 @MainActor
 final class BrewUpdaterTests: XCTestCase {
+    private static let autoKey = "BrewUpdater.autoCheckEnabled"
+    private var savedAutoCheck: Any?
+
+    override func setUp() {
+        super.setUp()
+        // Isolate from any persisted auto-check preference: with it left on,
+        // BrewUpdater.init() fires a background checkNow that adds runner calls
+        // and makes call-count assertions flaky. Saved/restored so running tests
+        // doesn't clobber the developer's real setting.
+        savedAutoCheck = UserDefaults.standard.object(forKey: Self.autoKey)
+        UserDefaults.standard.removeObject(forKey: Self.autoKey)
+    }
+
+    override func tearDown() {
+        UserDefaults.standard.set(savedAutoCheck, forKey: Self.autoKey)
+        super.tearDown()
+    }
+
     func test_checkNow_setsUpdateAvailable() async {
         let runner = SeqRunner()
         runner.responses = [

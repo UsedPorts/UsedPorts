@@ -110,7 +110,7 @@ struct SettingsView: View {
                         }
                         Spacer()
                         if let last = updater.lastCheckDate {
-                            Text("Last checked: \(last.formatted(date: .abbreviated, time: .shortened))")
+                            Text("Last checked: \(last.formatted(date: .abbreviated, time: .standard))")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

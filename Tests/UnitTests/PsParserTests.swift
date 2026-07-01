@@ -28,4 +28,25 @@ final class PsParserTests: XCTestCase {
         let out = "p4821\nfcwd\nn/Users/name/Projects/my-app\n"
         XCTAssertEqual(parser.parseCwd(out), "/Users/name/Projects/my-app")
     }
+
+    // MARK: - Batched parsers
+
+    func test_parsePidComm_multiplePids_pathWithSpace() {
+        let out = parser.parsePidComm("  4821 /opt/homebrew/bin/node\n  559 /Applications/My App/exec\n")
+        XCTAssertEqual(out[4821], "/opt/homebrew/bin/node")
+        XCTAssertEqual(out[559], "/Applications/My App/exec")
+    }
+
+    func test_parsePidLstart_multiplePids() {
+        let out = parser.parsePidLstart("4821 Mon May 12 10:23:14 2026\n559 Tue May 13 09:00:00 2026\n")
+        XCTAssertNotNil(out[4821])
+        XCTAssertNotNil(out[559])
+        XCTAssertNil(out[999])
+    }
+
+    func test_parsePidCwds_multiplePids() {
+        let out = parser.parsePidCwds("p4821\nfcwd\nn/Users/a\np559\nfcwd\nn/var/spool\n")
+        XCTAssertEqual(out[4821], "/Users/a")
+        XCTAssertEqual(out[559], "/var/spool")
+    }
 }

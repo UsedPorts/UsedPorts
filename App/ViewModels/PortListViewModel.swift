@@ -18,7 +18,7 @@ public final class PortListViewModel: ObservableObject {
     private var currentBaseInterval: TimeInterval = 3.0
     private var backgroundRefreshMode: BackgroundRefreshMode = .slower
 
-    private var augCache: [Int32: PortEntry] = [:]
+    private var augCache: [Int32: ProcessAugmentation] = [:]
     private var augTask: Task<Void, Never>?
     private var isAugmenting = false
     private let augmenter: ProcessAugmenting
@@ -257,35 +257,23 @@ public final class PortListViewModel: ObservableObject {
 
     private func startAugmentation() {
         // A pass is already running; let it finish rather than cancelling its
-        // in-flight subprocess work on every poll. The next poll restarts the
-        // pass, picking up any newly-appeared PIDs.
-        // ponytail: relies on augmenter.augment() always returning (CommandRunner
-        // times out at ~1s); a permanently hung augment would stall augmentation.
+        // in-flight subprocess work on every poll.
+        // ponytail: relies on augmenter.augment(pids:) always returning (CommandRunner
+        // times out at ~2s); a permanently hung augment would stall augmentation.
         guard !isAugmenting else { return }
+        // Only the PIDs we haven't resolved yet — steady state (all cached) does no work.
+        let uncached = Array(Set(rawEntries.map(\.pid)).subtracting(augCache.keys)).filter { $0 > 0 }
+        guard !uncached.isEmpty else { return }
         isAugmenting = true
-        let entries = rawEntries
         augTask = Task { [weak self] in
             guard let self else { return }
             defer { self.isAugmenting = false; self.augTask = nil }
-            for entry in entries {
-                if Task.isCancelled { return }
-                if self.hasCache(for: entry.pid) { continue }
-                let aug = await self.augmenter.augment(entry)
-                if Task.isCancelled { return }
-                self.storeAug(pid: entry.pid, entry: aug)
-            }
+            let infos = await self.augmenter.augment(pids: uncached)
+            if Task.isCancelled { return }
+            for (pid, info) in infos { self.augCache[pid] = info }
+            // One publish for the whole batch (augmentedEntries reads augCache).
+            self.objectWillChange.send()
         }
-    }
-
-    private func hasCache(for pid: Int32) -> Bool {
-        return augCache[pid] != nil
-    }
-
-    private func storeAug(pid: Int32, entry: PortEntry) {
-        augCache[pid] = entry
-        // Surface the cache change to observers (augmentedEntries reads augCache)
-        // without copying the whole rawEntries array for every augmented PID.
-        objectWillChange.send()
     }
 
     private func effectiveInterval(base: TimeInterval) -> TimeInterval {
@@ -298,6 +286,9 @@ public final class PortListViewModel: ObservableObject {
     }
 
     private func applyBatch(_ batch: [PortEntry]) {
+        // Nothing changed since the last poll — skip the whole downstream rebuild
+        // (publish, selection reconcile, table/menu re-render, augmentation pass).
+        guard batch != rawEntries else { return }
         let prevSelected = selection
         rawEntries = batch
         let liveIds = Set(batch.map(\.id))

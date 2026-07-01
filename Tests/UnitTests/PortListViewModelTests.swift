@@ -4,11 +4,12 @@ import Combine
 
 /// Fills augment fields synchronously, no gating.
 final class FillingAugmenter: ProcessAugmenting, @unchecked Sendable {
-    func augment(_ entry: PortEntry) async -> PortEntry {
-        var e = entry
-        e.executablePath = "/mock/exec"
-        e.cwd = "/mock/cwd"
-        return e
+    func augment(pids: [Int32]) async -> [Int32: ProcessAugmentation] {
+        var out: [Int32: ProcessAugmentation] = [:]
+        for pid in pids {
+            out[pid] = ProcessAugmentation(executablePath: "/mock/exec", cwd: "/mock/cwd")
+        }
+        return out
     }
 }
 
@@ -23,7 +24,7 @@ final class GatedAugmenter: ProcessAugmenting, @unchecked Sendable {
 
     var count: Int { lock.lock(); defer { lock.unlock() }; return _count }
 
-    func augment(_ entry: PortEntry) async -> PortEntry {
+    func augment(pids: [Int32]) async -> [Int32: ProcessAugmentation] {
         lock.lock(); _count += 1; let n = _count; lock.unlock()
         if n == 1 {
             firstCallReached.fulfill()
@@ -31,9 +32,9 @@ final class GatedAugmenter: ProcessAugmenting, @unchecked Sendable {
                 lock.lock(); cont = c; lock.unlock()
             }
         }
-        var e = entry
-        e.executablePath = "/mock/\(entry.pid)"
-        return e
+        var out: [Int32: ProcessAugmentation] = [:]
+        for pid in pids { out[pid] = ProcessAugmentation(executablePath: "/mock/\(pid)") }
+        return out
     }
 
     func release() {
@@ -51,6 +52,18 @@ final class PortListViewModelTests: XCTestCase {
     f23
     PTCP
     n127.0.0.1:3000
+    TST=LISTEN
+    """
+
+    /// Same PID (4821), different port (3001) — a changed batch that still targets
+    /// the same PID, used to exercise the in-flight augmentation guard.
+    static let oneEntryLsofAltPort = """
+    p4821
+    cnode
+    uname
+    f23
+    PTCP
+    n127.0.0.1:3001
     TST=LISTEN
     """
 
@@ -241,7 +254,10 @@ final class PortListViewModelTests: XCTestCase {
         try? await vm.refreshOnce()                 // starts a pass, gated on first call
         await fulfillment(of: [aug.firstCallReached], timeout: 2)
 
-        try? await vm.refreshOnce()                 // must NOT start a second pass
+        // Feed changed data (same PID) so applyBatch doesn't skip; the in-flight
+        // guard must still prevent a second augmentation pass.
+        runner.nextStdout = Self.oneEntryLsofAltPort
+        try? await vm.refreshOnce()
         for _ in 0..<5 { await Task.yield() }       // give an erroneous pass a chance to run
 
         XCTAssertEqual(aug.count, 1, "augmentation must not restart while a pass is in flight")

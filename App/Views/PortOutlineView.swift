@@ -78,6 +78,9 @@ struct PortOutlineView: NSViewRepresentable {
         fileprivate var parent: PortOutlineView
         private var itemsById: [String: PortRowItem] = [:]
         private var topLevelItems: [PortRowItem] = []
+        /// Last rows applied to the outline, so a re-render with identical data (e.g. the
+        /// window becoming visible again) skips the expensive reloadData + row rebuild.
+        private var lastRows: [PortTableRow] = []
         /// Reentrancy guard so applying selection/expansion/sort programmatically doesn't
         /// echo back through delegate callbacks and tear up the bindings.
         private var isApplyingExternalState = false
@@ -90,6 +93,9 @@ struct PortOutlineView: NSViewRepresentable {
 
         func refresh(rows: [PortTableRow], animated: Bool) {
             guard let outline = outlineView else { return }
+            // Unchanged data (a re-render, not a new scan) — nothing to rebuild or reload.
+            guard rows != lastRows else { return }
+            lastRows = rows
             var nextIds: Set<String> = []
             func register(_ row: PortTableRow) {
                 nextIds.insert(row.id)

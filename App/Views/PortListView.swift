@@ -17,10 +17,10 @@ struct PortListView: View {
             }
             .task {
                 viewModel.bootstrapIfNeeded()
-                viewModel.setWindowVisible(true)
+                viewModel.setWindowOnScreen(true)
             }
-            .onAppear { viewModel.setWindowVisible(true) }
-            .onDisappear { viewModel.setWindowVisible(false) }
+            .onAppear { viewModel.setWindowOnScreen(true) }
+            .onDisappear { viewModel.setWindowOnScreen(false) }
         }
     }
 

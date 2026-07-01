@@ -9,7 +9,11 @@ public final class PortListViewModel: ObservableObject {
     @Published public var filter: FilterState = FilterState()
     @Published public var selection: Set<PortEntry.ID> = []
     @Published public var autoRefresh: Bool = true
-    @Published public var windowVisible: Bool = true
+    /// Derived "should poll at foreground cadence": the window is on screen AND the app
+    /// is the active app. Set only via setWindowOnScreen/setAppActive.
+    @Published public private(set) var windowVisible: Bool = true
+    private var windowOnScreen = true
+    private var appActive = true
     @Published var columnCustomization: TableColumnCustomization<PortTableRow> = TableColumnCustomization<PortTableRow>()
 
     private let scanner: PortScanner
@@ -214,10 +218,27 @@ public final class PortListViewModel: ObservableObject {
 
     public func bootstrapIfNeeded(interval: TimeInterval = 3.0) {
         guard streamTask == nil else { return }
-        startStream(interval: interval)
+        // Immediate scan only on the very first launch (no data yet). Re-starting the
+        // stream when reopening the window shows the cached list and scans next cycle.
+        startStream(interval: interval, immediateScan: rawEntries.isEmpty)
     }
 
-    public func setWindowVisible(_ visible: Bool) {
+    /// The main window appeared/disappeared (closed, minimized, tab switched).
+    public func setWindowOnScreen(_ onScreen: Bool) {
+        guard windowOnScreen != onScreen else { return }
+        windowOnScreen = onScreen
+        updateForegroundState()
+    }
+
+    /// The app became/resigned active (⌘Tab to/from another app).
+    public func setAppActive(_ active: Bool) {
+        guard appActive != active else { return }
+        appActive = active
+        updateForegroundState()
+    }
+
+    private func updateForegroundState() {
+        let visible = windowOnScreen && appActive
         let was = windowVisible
         windowVisible = visible
         if was != visible {

@@ -265,6 +265,28 @@ final class PortListViewModelTests: XCTestCase {
     }
 
     @MainActor
+    func test_foregroundRequiresWindowOnScreenAndAppActive() {
+        let vm = PortListViewModel(scanner: PortScanner(runner: StubRunner()),
+                                   augmenter: FillingAugmenter())
+        XCTAssertTrue(vm.windowVisible)              // default: on screen + active
+
+        vm.setAppActive(false)
+        XCTAssertFalse(vm.windowVisible, "inactive app → background")
+        vm.setAppActive(true)
+        XCTAssertTrue(vm.windowVisible)
+
+        vm.setWindowOnScreen(false)
+        XCTAssertFalse(vm.windowVisible, "window off screen → background")
+
+        vm.setAppActive(false)                        // both off
+        XCTAssertFalse(vm.windowVisible)
+        vm.setWindowOnScreen(true)                    // window back but app still inactive
+        XCTAssertFalse(vm.windowVisible, "app still inactive → stays background")
+        vm.setAppActive(true)
+        XCTAssertTrue(vm.windowVisible)
+    }
+
+    @MainActor
     func test_augmentation_notifiesObserversAndMerges() async {
         let runner = StubRunner()
         runner.nextStdout = Self.oneEntryLsof

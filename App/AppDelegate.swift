@@ -91,7 +91,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         installStatusItem()
         observeVisibility()
         observePinnedPorts()
+        observeAppActivation()
     }
+
+    /// Drop to background refresh cadence when the app isn't the active app (e.g. the
+    /// user ⌘Tab'd away while leaving the window open), and restore on reactivation.
+    private func observeAppActivation() {
+        let nc = NotificationCenter.default
+        nc.addObserver(self, selector: #selector(appDidBecomeActive),
+                       name: NSApplication.didBecomeActiveNotification, object: nil)
+        nc.addObserver(self, selector: #selector(appDidResignActive),
+                       name: NSApplication.didResignActiveNotification, object: nil)
+        host.viewModel.setAppActive(NSApp.isActive)
+    }
+
+    @objc private func appDidBecomeActive() { host.viewModel.setAppActive(true) }
+    @objc private func appDidResignActive() { host.viewModel.setAppActive(false) }
 
     /// Updates the status text next to the menu bar icon (pinned port state) whenever pinnedPorts,
     /// rawEntries, or the "ports-only" compact toggle changes.

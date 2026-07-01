@@ -95,7 +95,9 @@ public final class BrewUpdater: NSObject, ObservableObject {
     private func scheduleAutoCheck() {
         autoTimer?.invalidate()
         checkNow()
-        autoTimer = Timer.scheduledTimer(withTimeInterval: 86_400, repeats: true) { [weak self] _ in
+        // 3 hours. The check itself is cheap; the cost is `brew update`'s full
+        // formula-index git sync, which is fine at this cadence.
+        autoTimer = Timer.scheduledTimer(withTimeInterval: 10_800, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.checkNow() }
         }
     }

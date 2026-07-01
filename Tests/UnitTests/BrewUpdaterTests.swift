@@ -32,6 +32,9 @@ final class BrewUpdaterTests: XCTestCase {
         let updater = BrewUpdater(runner: runner, brewPath: "/opt/homebrew/bin/brew", formula: "usedports")
         await updater.checkNowAsync()
         XCTAssertFalse(updater.updateAvailable)
+        // When up to date, latest is reported as the current version so the UI
+        // can always show a latest-version line.
+        XCTAssertEqual(updater.latestVersion, updater.currentVersion)
     }
     func test_noBrew_disablesChecks() {
         let updater = BrewUpdater(runner: SeqRunner(), brewPath: nil, formula: "usedports")

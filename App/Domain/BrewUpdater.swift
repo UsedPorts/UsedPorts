@@ -57,7 +57,9 @@ public final class BrewUpdater: NSObject, ObservableObject {
         case .available(let latest):
             updateAvailable = true; latestVersion = latest
         case .upToDate:
-            updateAvailable = false; latestVersion = nil
+            // Up to date means the newest available == the installed build, so
+            // report the current version as the latest so the UI can always show it.
+            updateAvailable = false; latestVersion = currentVersion
         }
         lastCheckFailed = false
         lastCheckDate = Date()

@@ -82,6 +82,11 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                 if updater.isManagedByBrew {
                     Toggle("Automatically check for updates", isOn: $updater.autoCheckEnabled)
+                    if let latest = updater.latestVersion {
+                        Text("Latest version: \(latest)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     HStack {
                         Button("Check Now") { updater.checkNow() }
                             .disabled(!updater.canCheckNow)

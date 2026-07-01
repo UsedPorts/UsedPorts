@@ -16,6 +16,9 @@ public final class PortListViewModel: ObservableObject {
     private let toasts: ToastCenter?
     private var streamTask: Task<Void, Never>?
     private var currentBaseInterval: TimeInterval = 3.0
+    // Effective (visibility-adjusted) interval the running stream is polling at, so we can
+    // skip a needless restart when a visibility change doesn't actually change the cadence.
+    private var currentEffectiveInterval: TimeInterval = 0
     private var backgroundRefreshMode: BackgroundRefreshMode = .slower
 
     private var augCache: [Int32: ProcessAugmentation] = [:]
@@ -193,13 +196,14 @@ public final class PortListViewModel: ObservableObject {
         }
     }
 
-    public func startStream(interval: TimeInterval = 3.0) {
+    public func startStream(interval: TimeInterval = 3.0, immediateScan: Bool = true) {
         streamTask?.cancel()
         currentBaseInterval = interval
         let effective = effectiveInterval(base: interval)
+        currentEffectiveInterval = effective
         streamTask = Task { [weak self] in
             guard let self else { return }
-            let stream = await self.scanner.startPolling(intervalSeconds: effective)
+            let stream = await self.scanner.startPolling(intervalSeconds: effective, immediateFirstScan: immediateScan)
             for await batch in stream {
                 if !Task.isCancelled {
                     self.applyBatch(batch)
@@ -217,7 +221,9 @@ public final class PortListViewModel: ObservableObject {
         let was = windowVisible
         windowVisible = visible
         if was != visible {
-            applyStreamForCurrentState()
+            // Only force an immediate rescan when *showing* (fresh data on open).
+            // Hiding just reschedules the cadence — no wasteful scan on the way out.
+            applyStreamForCurrentState(immediateScan: visible)
         }
         if !visible {
             augTask?.cancel()
@@ -229,14 +235,21 @@ public final class PortListViewModel: ObservableObject {
 
     /// Restart, stop, or leave the polling stream alone based on visibility + background mode.
     /// Centralized so visibility changes, interval changes, and mode changes go through one path.
-    private func applyStreamForCurrentState() {
+    private func applyStreamForCurrentState(immediateScan: Bool) {
         if !windowVisible && backgroundRefreshMode == .paused {
             if streamTask != nil {
                 Task { await stopStream() }
             }
-        } else if autoRefresh {
-            startStream(interval: currentBaseInterval)
+            return
         }
+        guard autoRefresh else { return }
+        // If a stream is already running at the same effective cadence, leave it be —
+        // tearing it down would trigger a needless rescan + full UI rebuild on every
+        // show/hide toggle.
+        if streamTask != nil, effectiveInterval(base: currentBaseInterval) == currentEffectiveInterval {
+            return
+        }
+        startStream(interval: currentBaseInterval, immediateScan: immediateScan)
     }
 
     /// Updates the base poll interval and restarts the stream if it's currently running.
@@ -244,7 +257,7 @@ public final class PortListViewModel: ObservableObject {
         guard interval > 0, currentBaseInterval != interval else { return }
         currentBaseInterval = interval
         if streamTask != nil {
-            startStream(interval: interval)
+            startStream(interval: interval, immediateScan: false)
         }
     }
 
@@ -252,7 +265,7 @@ public final class PortListViewModel: ObservableObject {
     public func setBackgroundRefreshMode(_ mode: BackgroundRefreshMode) {
         guard backgroundRefreshMode != mode else { return }
         backgroundRefreshMode = mode
-        applyStreamForCurrentState()
+        applyStreamForCurrentState(immediateScan: false)
     }
 
     private func startAugmentation() {
@@ -322,6 +335,7 @@ public final class PortListViewModel: ObservableObject {
     public func stopStream() async {
         streamTask?.cancel()
         streamTask = nil
+        currentEffectiveInterval = 0
         await scanner.stopPolling()
     }
 

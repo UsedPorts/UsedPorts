@@ -2,7 +2,7 @@ import Foundation
 
 public protocol PortScanning: AnyObject, Sendable {
     func scanOnce() async throws -> [PortEntry]
-    func startPolling(intervalSeconds: TimeInterval) async -> AsyncStream<[PortEntry]>
+    func startPolling(intervalSeconds: TimeInterval, immediateFirstScan: Bool) async -> AsyncStream<[PortEntry]>
     func stopPolling() async
 }
 
@@ -35,13 +35,18 @@ public actor PortScanner: PortScanning {
         return parser.parse(r.stdoutString)
     }
 
-    public func startPolling(intervalSeconds: TimeInterval) -> AsyncStream<[PortEntry]> {
+    public func startPolling(intervalSeconds: TimeInterval, immediateFirstScan: Bool = true) -> AsyncStream<[PortEntry]> {
         pollTask?.cancel()
         continuation?.finish()
         let stream = AsyncStream<[PortEntry]> { cont in
             self.continuation = cont
         }
         pollTask = Task { [weak self] in
+            // Skip the leading scan when rescheduling cadence (e.g. window hidden) so a
+            // visibility change doesn't cost an immediate scan + UI rebuild.
+            if !immediateFirstScan {
+                try? await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))
+            }
             while !Task.isCancelled {
                 guard let self else { break }
                 if let entries = try? await self.scanOnce() {

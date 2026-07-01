@@ -43,6 +43,26 @@ final class PortScannerTests: XCTestCase {
         XCTAssertEqual(entries[0].port, 3000)
     }
 
+    func test_startPolling_immediateFirstScanFalse_defersScan() async {
+        let runner = StubRunner()
+        let scanner = PortScanner(runner: runner)
+        _ = await scanner.startPolling(intervalSeconds: 10, immediateFirstScan: false)
+        try? await Task.sleep(nanoseconds: 200_000_000)   // 0.2s « 10s interval
+        let calls = runner.capturedCalls.count
+        await scanner.stopPolling()
+        XCTAssertEqual(calls, 0, "no scan should run before the first interval when deferred")
+    }
+
+    func test_startPolling_immediateFirstScanTrue_scansRightAway() async {
+        let runner = StubRunner()
+        let scanner = PortScanner(runner: runner)
+        _ = await scanner.startPolling(intervalSeconds: 10, immediateFirstScan: true)
+        try? await Task.sleep(nanoseconds: 200_000_000)
+        let calls = runner.capturedCalls.count
+        await scanner.stopPolling()
+        XCTAssertGreaterThanOrEqual(calls, 1, "immediate scan should run right away")
+    }
+
     func test_scanOnce_elevatedTakesPrecedence() async throws {
         let runner = StubRunner()
         let scanner = PortScanner(runner: runner)

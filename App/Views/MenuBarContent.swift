@@ -307,11 +307,11 @@ struct MenuBarContent: View {
     }
 
     /// Bridges the menubar list to the same `groupByPid` setting that powers the main table.
-    /// When on, PIDs that own ≥2 ports render as a process · pid header followed by indented
-    /// child rows (one per port). Single-port PIDs render as a normal leaf row so the toggle
-    /// doesn't add visual noise for processes that only own one port. When off, falls back to
-    /// the flat layout — `menuBarGroupSamePid` still hides the repeated process · pid line on
-    /// adjacent same-PID rows so the two modes look visually similar.
+    /// When on, every PID renders as a process · pid header followed by indented child rows
+    /// (one per port), including PIDs that own a single port — so the process name, icon, and
+    /// pid are always visible in grouping mode. When off, falls back to the flat layout —
+    /// `menuBarGroupSamePid` still hides the repeated process · pid line on adjacent same-PID
+    /// rows so the two modes look visually similar.
     private func buildMenuRows(_ rows: [PortRowData]) -> [MenuBarRow] {
         guard settings.groupByPid else {
             return annotateGrouping(rows).map { .leaf($0) }
@@ -333,16 +333,16 @@ struct MenuBarContent: View {
         var out: [MenuBarRow] = []
         for pid in pidOrder {
             let members = byPid[pid] ?? []
-            if members.count <= 1, let only = members.first {
-                out.append(.leaf(AnnotatedRow(row: only, hideProcess: false)))
-            } else {
-                out.append(.group(GroupRowData(
-                    id: "group-\(pid)",
-                    pid: pid,
-                    processName: members.first?.processName ?? "",
-                    children: members
-                )))
-            }
+            guard let first = members.first else { continue }
+            // Group every PID uniformly, including single-port ones, so grouping mode
+            // always shows the process · pid header (icon + name + pid + "1 port")
+            // above the port row instead of a bare leaf.
+            out.append(.group(GroupRowData(
+                id: "group-\(pid)",
+                pid: pid,
+                processName: first.processName,
+                children: members
+            )))
         }
         for row in orphans {
             out.append(.leaf(AnnotatedRow(row: row, hideProcess: false)))
@@ -561,9 +561,9 @@ private enum MenuBarRow: Identifiable, Equatable {
     }
 }
 
-/// Single port row. Used in three roles: standalone leaf (Pinned/Search/OFF mode), single-port
-/// PID under groupByPid (treated as leaf since there's nothing to collapse), and indented child
-/// of a `PortGroupHeader`. The header role hides the per-row process line and kill button so the
+/// Single port row. Used in two roles: standalone leaf (Pinned/Search/OFF mode, and orphan
+/// rows with no PID), and indented child of a `PortGroupHeader` (every grouped PID, including
+/// single-port ones). The header role hides the per-row process line and kill button so the
 /// PID-level controls live on the header; both roles share the same port/proto/state line so the
 /// list keeps a consistent visual rhythm between ON and OFF.
 /// Process app icon, or a same-size transparent slot when the process has none

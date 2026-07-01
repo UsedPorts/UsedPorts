@@ -77,11 +77,24 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Updates") {
-                HStack {
-                    Text("Current version: \(updater.currentVersion)")
+                Group {
                     if let latest = updater.latestVersion {
-                        Spacer()
-                        Text("Latest version: \(latest)")
+                        // Side by side when it fits; if the versions are long enough
+                        // to overflow, wrap to Current on one line, Latest on the next
+                        // instead of truncating.
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 8) {
+                                Text("Current version: \(updater.currentVersion)")
+                                Spacer(minLength: 8)
+                                Text("Latest version: \(latest)")
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Current version: \(updater.currentVersion)")
+                                Text("Latest version: \(latest)")
+                            }
+                        }
+                    } else {
+                        Text("Current version: \(updater.currentVersion)")
                     }
                 }
                 .font(.caption)

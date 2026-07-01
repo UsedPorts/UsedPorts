@@ -98,7 +98,9 @@ struct MenuBarContent: View {
 
     private var content: some View {
         ScrollView {
-            VStack(spacing: 0) {
+            // Lazy so opening the popover only renders the rows on screen instead
+            // of building the entire (often hundreds of) port list up front.
+            LazyVStack(spacing: 0) {
                 if query.isEmpty {
                     defaultList
                 } else {

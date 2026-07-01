@@ -198,8 +198,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         if popover.isShown {
             popover.performClose(sender)
         } else {
+            // Show the cached list instantly, then kick a fresh scan that updates
+            // the rows in place when it completes — no blocking on open.
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
+            Task { try? await host.viewModel.refreshOnce() }
         }
     }
 }

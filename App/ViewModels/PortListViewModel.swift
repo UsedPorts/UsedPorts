@@ -221,9 +221,7 @@ public final class PortListViewModel: ObservableObject {
         let was = windowVisible
         windowVisible = visible
         if was != visible {
-            // Only force an immediate rescan when *showing* (fresh data on open).
-            // Hiding just reschedules the cadence — no wasteful scan on the way out.
-            applyStreamForCurrentState(immediateScan: visible)
+            applyStreamForCurrentState()
         }
         if !visible {
             augTask?.cancel()
@@ -235,7 +233,7 @@ public final class PortListViewModel: ObservableObject {
 
     /// Restart, stop, or leave the polling stream alone based on visibility + background mode.
     /// Centralized so visibility changes, interval changes, and mode changes go through one path.
-    private func applyStreamForCurrentState(immediateScan: Bool) {
+    private func applyStreamForCurrentState() {
         if !windowVisible && backgroundRefreshMode == .paused {
             if streamTask != nil {
                 Task { await stopStream() }
@@ -249,7 +247,9 @@ public final class PortListViewModel: ObservableObject {
         if streamTask != nil, effectiveInterval(base: currentBaseInterval) == currentEffectiveInterval {
             return
         }
-        startStream(interval: currentBaseInterval, immediateScan: immediateScan)
+        // Reschedule cadence without an immediate scan: keep showing the last scan and
+        // let the next poll cycle refresh — whether going to background or foreground.
+        startStream(interval: currentBaseInterval, immediateScan: false)
     }
 
     /// Updates the base poll interval and restarts the stream if it's currently running.
@@ -265,7 +265,7 @@ public final class PortListViewModel: ObservableObject {
     public func setBackgroundRefreshMode(_ mode: BackgroundRefreshMode) {
         guard backgroundRefreshMode != mode else { return }
         backgroundRefreshMode = mode
-        applyStreamForCurrentState(immediateScan: false)
+        applyStreamForCurrentState()
     }
 
     private func startAugmentation() {

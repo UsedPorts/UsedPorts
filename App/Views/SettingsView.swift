@@ -77,16 +77,17 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Updates") {
-                Text("Current version: \(updater.currentVersion)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Text("Current version: \(updater.currentVersion)")
+                    if let latest = updater.latestVersion {
+                        Spacer()
+                        Text("Latest version: \(latest)")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 if updater.isManagedByBrew {
                     Toggle("Automatically check for updates", isOn: $updater.autoCheckEnabled)
-                    if let latest = updater.latestVersion {
-                        Text("Latest version: \(latest)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
                     HStack {
                         Button("Check Now") { updater.checkNow() }
                             .disabled(!updater.canCheckNow)

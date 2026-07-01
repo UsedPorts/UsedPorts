@@ -855,6 +855,16 @@
         }
       }
     },
+    "Latest version: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "최신 버전: %@"
+          }
+        }
+      }
+    },
     "Launch at Login" : {
       "extractionState" : "stale",
       "localizations" : {

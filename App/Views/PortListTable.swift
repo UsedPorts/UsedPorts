@@ -379,16 +379,15 @@ struct PortListTable: View {
         let useMin = sortDir == .asc
 
         func rep(_ keys: [RowSortKey]) -> RowSortKey {
-            let pick: RowSortKey?
-            if useMin {
-                pick = keys.min()
-            } else {
-                pick = keys.max()
-            }
-            return pick ?? RowSortKey(
-                primary: sortPrimary(padInt(Int(pid)), isPinned: isPinned, sortDir: sortDir),
-                tieBreaker: Int(pid)
-            )
+            let pick = useMin ? keys.min() : keys.max()
+            // Keep the representative child's primary (it sets the group's position),
+            // but always tie-break on PID so two groups sharing a representative value
+            // (e.g. both owning port 5353) order deterministically instead of swapping
+            // between refreshes — Swift's sort isn't stable and group order is otherwise
+            // undefined for equal keys.
+            let primary = pick?.primary
+                ?? sortPrimary(padInt(Int(pid)), isPinned: isPinned, sortDir: sortDir)
+            return RowSortKey(primary: primary, tieBreaker: Int(pid))
         }
 
         // Labels follow the children's display order so the joined values line up with the

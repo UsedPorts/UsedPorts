@@ -281,3 +281,34 @@ final class PortListViewModelTests: XCTestCase {
         XCTAssertEqual(r.count, 3)
     }
 }
+
+final class PortListTableSortTests: XCTestCase {
+    private func entry(_ id: String, pid: Int32, port: UInt16) -> PortEntry {
+        PortEntry(id: id, pid: pid, processName: "p\(pid)", user: "u",
+                  proto: .udp, localAddress: "*", port: port, state: nil)
+    }
+
+    /// Two PIDs both own port 5353 (each with a second port so both become groups).
+    /// The group order must be deterministic (by PID) regardless of input order,
+    /// not swap between refreshes.
+    func test_groupsSharingPort_orderByPidDeterministically() {
+        let entries = [
+            entry("a1", pid: 6456, port: 5353),
+            entry("a2", pid: 6456, port: 49850),
+            entry("b1", pid: 22365, port: 5353),
+            entry("b2", pid: 22365, port: 49724),
+        ]
+        let sort = SortSpec(column: .port, dir: .asc)
+        func topGroupPids(_ input: [PortEntry]) -> [Int32] {
+            PortListTable.buildRows(entries: input, filter: FilterState(),
+                                    pinnedPorts: [], groupByPid: true,
+                                    hideDuplicateRows: false, sort: sort)
+                .filter { $0.kind == .group }
+                .map { $0.pid }
+        }
+        let order = topGroupPids(entries)
+        XCTAssertEqual(order, [6456, 22365])
+        XCTAssertEqual(topGroupPids(entries.reversed()), order)
+        XCTAssertEqual(topGroupPids([entries[3], entries[1], entries[2], entries[0]]), order)
+    }
+}

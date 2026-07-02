@@ -9,10 +9,10 @@ General toggles affect both the main table and the menu-bar popover; the rest ar
 | Setting | Scope | Behavior |
 |---|---|---|
 | Launch at Login | App | Registers with `SMAppService`. Toggle reflects the actual system state (rolled back if the registration call fails). |
-| Hide repeated process names | Menu bar only | When **Group by PID is off**, adjacent rows sharing a PID suppress the second-line `process · pid` label. Has no effect when Group by PID is on (header already shows process · pid). |
 | Hide duplicate rows | Both (different keys) | Collapses rows that would look identical. Dedup key differs by surface — see [dedup key table](#hide-duplicate-rows-dedup-key) below. |
-| Group by PID | Both | Multi-port processes collapse into a parent row. **Main table:** disclosure parent + children sorted by user's active column. **Menu bar:** `process · pid` header + indented child rows (one per port). Single-port PIDs stay as a normal leaf row. Pin remains per-port; kill targets the PID. |
+| Group by PID | Both | Multi-port processes collapse into a parent row. **Main table:** disclosure parent + children sorted by user's active column; single-port PIDs stay as a normal leaf row. **Menu bar:** every PID renders as a `process · pid` header + indented child rows (one per port), including single-port PIDs. Pin remains per-port; kill targets the PID. |
 | Show process icons | Both | Displays each process's app icon next to its row in the main table and the menu-bar popover. When off, rows show text only. |
+| Show a default icon for processes without one | Both | Sub-setting of *Show process icons*. When on, processes with no app icon (CLI tools, daemons) show a generic executable icon instead of a blank slot. Disabled when *Show process icons* is off. |
 
 ### Hide duplicate rows: dedup key
 
@@ -35,8 +35,8 @@ Only matters when the toggle is on. Rows differing only by file descriptor (`lso
 | Setting | Behavior |
 |---|---|
 | Auto refresh | Master switch for the polling stream. When off, refreshes only on manual invocation (toolbar Refresh, popover Refresh, kill-result polling). |
-| Foreground refresh interval | Base poll cadence for `lsof` while the main window is visible. 1 / 3 / 5 seconds. |
-| Background refresh interval | Behavior while the main window is hidden: *Same as foreground* / *Slower (2× interval, default)* / *Pause* (stop until show). |
+| Foreground refresh interval | Base poll cadence for `lsof` while in the foreground. 1 / 3 / 5 seconds. |
+| Background refresh interval | Behavior when **not in the foreground** — the window is closed/hidden *or* the app is inactive (another app is focused): *Same as foreground* / *Slower (2× interval, default)* / *Pause* (stop until foreground). Foregrounding shows the cached list and refreshes on the next cycle rather than scanning immediately. |
 
 ## Language
 
@@ -48,7 +48,8 @@ Only matters when the toggle is on. Rows differing only by file descriptor (`lso
 
 | Setting | Behavior |
 |---|---|
-| Automatically check for updates | Daily background check via `brew outdated`. Only shown when UsedPorts is managed by Homebrew. |
+| Automatically check for updates | Background check every 3 hours via `brew update` + `brew outdated`. Only shown when UsedPorts is managed by Homebrew. |
+| Latest version | Shows the latest known version after a check (equals the current version when up to date). |
 | Check Now | Manual check. Disabled while a check is in flight. |
 | Update to … | Runs `brew upgrade usedports` and relaunches the app. Shown when a newer version is available. |
 

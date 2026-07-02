@@ -92,6 +92,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         observeVisibility()
         observePinnedPorts()
         observeAppActivation()
+        observeWindowsForDock()
+    }
+
+    /// Show the Dock icon only while a normal app window (main or Settings) is open;
+    /// otherwise the app lives purely in the menu bar with no Dock presence.
+    private func observeWindowsForDock() {
+        let nc = NotificationCenter.default
+        nc.addObserver(self, selector: #selector(managedWindowOpened(_:)),
+                       name: NSWindow.didBecomeKeyNotification, object: nil)
+        nc.addObserver(self, selector: #selector(managedWindowWillClose(_:)),
+                       name: NSWindow.willCloseNotification, object: nil)
+    }
+
+    /// A real app window, not the menu-bar popover (canBecomeMain is false for it) or panels.
+    private func isManagedWindow(_ window: NSWindow) -> Bool {
+        window.canBecomeMain && !(window is NSPanel)
+    }
+
+    @objc private func managedWindowOpened(_ note: Notification) {
+        guard let w = note.object as? NSWindow, isManagedWindow(w) else { return }
+        if NSApp.activationPolicy() != .regular {
+            NSApp.setActivationPolicy(.regular)
+        }
+    }
+
+    @objc private func managedWindowWillClose(_ note: Notification) {
+        guard let w = note.object as? NSWindow, isManagedWindow(w) else { return }
+        // The window is still open during willClose; recompute on the next tick.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let hasWindow = NSApp.windows.contains { $0.isVisible && self.isManagedWindow($0) }
+            if !hasWindow, NSApp.activationPolicy() != .accessory {
+                NSApp.setActivationPolicy(.accessory)
+            }
+        }
     }
 
     /// Drop to background refresh cadence when the app isn't the active app (e.g. the

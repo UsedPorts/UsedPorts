@@ -471,6 +471,9 @@ struct MenuBarContent: View {
     private var footer: some View {
         HStack(spacing: 6) {
             Button {
+                // Restore the Dock icon before showing the window (the app may be in
+                // accessory mode after the window was closed).
+                NSApp.setActivationPolicy(.regular)
                 NSApp.activate(ignoringOtherApps: true)
                 openWindow(id: "main")
             } label: {

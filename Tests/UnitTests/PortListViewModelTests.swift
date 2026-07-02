@@ -265,6 +265,16 @@ final class PortListViewModelTests: XCTestCase {
     }
 
     @MainActor
+    func test_processIcon_genericFallbackGatedByFlag() {
+        let vm = PortListViewModel(scanner: PortScanner(runner: StubRunner()),
+                                   augmenter: FillingAugmenter())
+        // A pid with no running app resolves to no app icon.
+        let bogus: pid_t = 2_000_000_000
+        XCTAssertTrue(vm.processIcon(forPID: bogus, useGenericFallback: true) === ProcessIconProvider.genericIcon)
+        XCTAssertNil(vm.processIcon(forPID: bogus, useGenericFallback: false))
+    }
+
+    @MainActor
     func test_foregroundRequiresWindowOnScreenAndAppActive() {
         let vm = PortListViewModel(scanner: PortScanner(runner: StubRunner()),
                                    augmenter: FillingAugmenter())

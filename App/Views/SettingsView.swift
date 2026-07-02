@@ -13,6 +13,9 @@ struct SettingsView: View {
                 Toggle("Hide duplicate rows", isOn: $settings.hideDuplicateRows)
                 Toggle("Group by PID", isOn: $settings.groupByPid)
                 Toggle("Show process icons", isOn: $settings.showProcessIcons)
+                Toggle("Show a default icon for processes without one", isOn: $settings.showGenericProcessIcon)
+                    .disabled(!settings.showProcessIcons)
+                    .padding(.leading, 16)
             }
             Section("Menu Bar") {
                 Toggle("Show in Menu Bar", isOn: $settings.showMenuBar)

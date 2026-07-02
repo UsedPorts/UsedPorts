@@ -173,7 +173,7 @@ struct MenuBarContent: View {
             row: row,
             showProcessLine: !item.hideProcess,
             showIcon: settings.showProcessIcons,
-            icon: settings.showProcessIcons ? viewModel.processIcon(forPID: pid_t(row.pid)) : nil,
+            icon: settings.showProcessIcons ? viewModel.processIcon(forPID: pid_t(row.pid), useGenericFallback: settings.showGenericProcessIcon) : nil,
             showKillButton: true,
             leadingIndent: 0,
             isPinned: settings.pinnedPorts.contains(row.port),
@@ -202,7 +202,7 @@ struct MenuBarContent: View {
             pid: group.pid,
             portCount: group.children.count,
             showIcon: settings.showProcessIcons,
-            icon: settings.showProcessIcons ? viewModel.processIcon(forPID: pid_t(group.pid)) : nil,
+            icon: settings.showProcessIcons ? viewModel.processIcon(forPID: pid_t(group.pid), useGenericFallback: settings.showGenericProcessIcon) : nil,
             isConfirming: confirming,
             onKillRequest: { confirmKillRowId = group.id }
         )

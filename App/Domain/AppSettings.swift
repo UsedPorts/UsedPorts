@@ -17,6 +17,7 @@ public final class AppSettings: ObservableObject {
     private static let hideDuplicateRowsKey = "settings.hideDuplicateRows"
     private static let groupByPidKey = "settings.groupByPid"
     private static let showProcessIconsKey = "settings.showProcessIcons"
+    private static let showGenericProcessIconKey = "settings.showGenericProcessIcon"
     private static let refreshIntervalKey = "settings.refreshIntervalSeconds"
     private static let backgroundRefreshModeKey = "settings.backgroundRefreshMode"
 
@@ -86,6 +87,15 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    /// When true (and showProcessIcons is on), processes without their own app icon
+    /// (CLI tools, daemons) render a generic executable icon instead of a blank slot.
+    @Published public var showGenericProcessIcon: Bool {
+        didSet {
+            guard oldValue != showGenericProcessIcon else { return }
+            UserDefaults.standard.set(showGenericProcessIcon, forKey: Self.showGenericProcessIconKey)
+        }
+    }
+
     /// Base poll interval for the lsof scanner, in seconds.
     @Published public var refreshIntervalSeconds: Double {
         didSet {
@@ -146,6 +156,11 @@ public final class AppSettings: ObservableObject {
             self.showProcessIcons = true
         } else {
             self.showProcessIcons = UserDefaults.standard.bool(forKey: Self.showProcessIconsKey)
+        }
+        if UserDefaults.standard.object(forKey: Self.showGenericProcessIconKey) == nil {
+            self.showGenericProcessIcon = true
+        } else {
+            self.showGenericProcessIcon = UserDefaults.standard.bool(forKey: Self.showGenericProcessIconKey)
         }
         if UserDefaults.standard.object(forKey: Self.refreshIntervalKey) == nil {
             self.refreshIntervalSeconds = 3.0

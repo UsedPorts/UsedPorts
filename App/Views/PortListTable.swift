@@ -98,7 +98,7 @@ struct PortListTable: View {
                 sort: $viewModel.sort,
                 expandedGroups: $expandedGroups,
                 showProcessIcons: settings.showProcessIcons,
-                iconForPID: { viewModel.processIcon(forPID: $0) }
+                iconForPID: { viewModel.processIcon(forPID: $0, useGenericFallback: settings.showGenericProcessIcon) }
             )
             .onChange(of: viewModel.selection) { oldValue, newValue in
                 // Only auto-expand groups that just entered the selection. Keeping group

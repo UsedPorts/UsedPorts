@@ -46,10 +46,12 @@ public final class PortListViewModel: ObservableObject {
         }
     }
 
-    /// App icon for a pid, or nil for CLI/daemon processes. Cache-backed; lookups don't
-    /// trigger re-renders (the cache is not @Published).
-    public func processIcon(forPID pid: pid_t) -> NSImage? {
-        iconProvider.icon(forPID: pid)
+    /// App icon for a pid. Cache-backed; lookups don't trigger re-renders (the cache is
+    /// not @Published). Processes without an app icon (CLI/daemon) return the generic
+    /// executable icon when `useGenericFallback` is set, otherwise nil (blank slot).
+    public func processIcon(forPID pid: pid_t, useGenericFallback: Bool) -> NSImage? {
+        if let icon = iconProvider.icon(forPID: pid) { return icon }
+        return useGenericFallback ? ProcessIconProvider.genericIcon : nil
     }
 
     public func persistCustomization() {

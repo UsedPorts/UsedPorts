@@ -36,13 +36,14 @@ public final class ProcessIconProvider {
         self.resolver = resolver
     }
 
-    /// Cache-first lookup. Resolves (and caches, including a nil app-icon result) on
-    /// miss, then falls back to the generic icon so callers always get something to show.
+    /// Cache-first lookup for the process's own app icon, or nil for CLI/daemon processes.
+    /// The generic-icon fallback is a display choice applied by the caller (see
+    /// PortListViewModel.processIcon), gated by the showGenericProcessIcon setting.
     public func icon(forPID pid: pid_t) -> NSImage? {
-        if let cached = cache[pid] { return cached ?? Self.genericIcon }
+        if let cached = cache[pid] { return cached }
         let resolved = resolver.icon(forPID: pid)
         cache[pid] = resolved
-        return resolved ?? Self.genericIcon
+        return resolved
     }
 
     /// Drop cached entries whose pid is no longer present in the latest snapshot.

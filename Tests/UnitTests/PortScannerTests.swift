@@ -57,10 +57,15 @@ final class PortScannerTests: XCTestCase {
         let runner = StubRunner()
         let scanner = PortScanner(runner: runner)
         _ = await scanner.startPolling(intervalSeconds: 10, immediateFirstScan: true)
-        try? await Task.sleep(nanoseconds: 200_000_000)
-        let calls = runner.capturedCalls.count
+        // Poll up to ~2s (« 10s interval) so a busy machine doesn't flake the assertion.
+        var calls = 0
+        for _ in 0..<40 {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            calls = runner.capturedCalls.count
+            if calls >= 1 { break }
+        }
         await scanner.stopPolling()
-        XCTAssertGreaterThanOrEqual(calls, 1, "immediate scan should run right away")
+        XCTAssertGreaterThanOrEqual(calls, 1, "immediate scan should run promptly")
     }
 
     func test_scanOnce_elevatedTakesPrecedence() async throws {

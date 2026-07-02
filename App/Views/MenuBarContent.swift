@@ -66,7 +66,7 @@ struct MenuBarContent: View {
     private var headerSubtitle: String {
         let total = viewModel.rawEntries.count
         let listening = viewModel.rawEntries.filter { $0.state == "LISTEN" }.count
-        return "\(total) ports · \(listening) listening"
+        return String(localized: "\(total) ports · \(listening) listening")
     }
 
     // MARK: - Search

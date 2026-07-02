@@ -214,7 +214,7 @@ struct DetailPaneView: View {
     }
 
     private func multiCountLabel(count: Int) -> some View {
-        let label: String = "\(count) rows selected"
+        let label = String(localized: "\(count) rows selected")
         return Text(label).bold()
     }
 

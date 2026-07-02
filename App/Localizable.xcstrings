@@ -16,7 +16,14 @@
       }
     },
     "(no matches)" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(일치 없음)"
+          }
+        }
+      }
     },
     "(no ports)" : {
       "localizations" : {
@@ -48,6 +55,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld 포트"
+          }
+        }
+      }
+    },
+    "%lld ports · %lld listening" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld 포트 · %2$lld 리스닝"
           }
         }
       }
@@ -145,7 +162,14 @@
       }
     },
     "Any" : {
-
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전체"
+          }
+        }
+      }
     },
     "Apply" : {
       "extractionState" : "stale",
@@ -774,6 +798,16 @@
     "Kill PID %@?" : {
 
     },
+    "Kill PID %lld?" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PID %lld 종료?"
+          }
+        }
+      }
+    },
     "Killed PID %lld (%@)" : {
       "localizations" : {
         "ko" : {
@@ -790,6 +824,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Killed PID %1$lld (%2$@) [-9]"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PID %1$lld (%2$@) 종료됨 [-9]"
           }
         }
       }
@@ -1039,7 +1079,15 @@
       }
     },
     "port" : {
-      "comment" : "singular"
+      "comment" : "singular",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트"
+          }
+        }
+      }
     },
     "Port + process" : {
       "localizations" : {
@@ -1062,7 +1110,15 @@
       }
     },
     "ports" : {
-      "comment" : "plural"
+      "comment" : "plural",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트"
+          }
+        }
+      }
     },
     "Preset" : {
       "extractionState" : "stale",

@@ -14,7 +14,6 @@ public final class AppSettings: ObservableObject {
     private static let appLanguageKey = "settings.appLanguage"
     private static let pinnedPortsKey = "settings.pinnedPorts"
     private static let menuBarCompactKey = "settings.menuBarCompact"
-    private static let menuBarGroupSamePidKey = "settings.menuBarGroupSamePid"
     private static let hideDuplicateRowsKey = "settings.hideDuplicateRows"
     private static let groupByPidKey = "settings.groupByPid"
     private static let showProcessIconsKey = "settings.showProcessIcons"
@@ -52,15 +51,6 @@ public final class AppSettings: ObservableObject {
         didSet {
             guard oldValue != menuBarCompact else { return }
             UserDefaults.standard.set(menuBarCompact, forKey: Self.menuBarCompactKey)
-        }
-    }
-
-    /// When true, adjacent rows sharing a PID suppress the repeated process name,
-    /// producing a "one cell, two lines" look for same-process port groups.
-    @Published public var menuBarGroupSamePid: Bool {
-        didSet {
-            guard oldValue != menuBarGroupSamePid else { return }
-            UserDefaults.standard.set(menuBarGroupSamePid, forKey: Self.menuBarGroupSamePidKey)
         }
     }
 
@@ -141,11 +131,6 @@ public final class AppSettings: ObservableObject {
             self.menuBarCompact = true
         } else {
             self.menuBarCompact = UserDefaults.standard.bool(forKey: Self.menuBarCompactKey)
-        }
-        if UserDefaults.standard.object(forKey: Self.menuBarGroupSamePidKey) == nil {
-            self.menuBarGroupSamePid = true
-        } else {
-            self.menuBarGroupSamePid = UserDefaults.standard.bool(forKey: Self.menuBarGroupSamePidKey)
         }
         if UserDefaults.standard.object(forKey: Self.hideDuplicateRowsKey) == nil {
             self.hideDuplicateRows = true

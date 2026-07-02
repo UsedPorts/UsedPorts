@@ -311,9 +311,8 @@ struct MenuBarContent: View {
     /// Bridges the menubar list to the same `groupByPid` setting that powers the main table.
     /// When on, every PID renders as a process · pid header followed by indented child rows
     /// (one per port), including PIDs that own a single port — so the process name, icon, and
-    /// pid are always visible in grouping mode. When off, falls back to the flat layout —
-    /// `menuBarGroupSamePid` still hides the repeated process · pid line on adjacent same-PID
-    /// rows so the two modes look visually similar.
+    /// pid are always visible in grouping mode. When off, falls back to a flat layout where
+    /// every row shows its own process · pid line.
     private func buildMenuRows(_ rows: [PortRowData]) -> [MenuBarRow] {
         guard settings.groupByPid else {
             return annotateGrouping(rows).map { .leaf($0) }
@@ -352,21 +351,9 @@ struct MenuBarContent: View {
         return out
     }
 
-    /// Tag each row with whether its process name should be hidden. The "ports-only"
-    /// menu-bar toggle controls only the NSStatusItem title (see `AppDelegate`), so
-    /// popover rows always show process info; only "group same-process rows" hides
-    /// the name on a row whose PID matches the row above.
+    /// Wrap flat rows for display. Popover rows always show their process · pid line.
     private func annotateGrouping(_ rows: [PortRowData]) -> [AnnotatedRow] {
-        let group = settings.menuBarGroupSamePid
-        var result: [AnnotatedRow] = []
-        result.reserveCapacity(rows.count)
-        var prevPid: Int? = nil
-        for row in rows {
-            let hide = group && prevPid == row.pid && row.pid > 0
-            result.append(AnnotatedRow(row: row, hideProcess: hide))
-            prevPid = row.pid
-        }
-        return result
+        rows.map { AnnotatedRow(row: $0, hideProcess: false) }
     }
 
     /// When the query is purely a port number (1..65535) and that port isn't already pinned,

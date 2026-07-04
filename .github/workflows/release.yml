@@ -126,9 +126,13 @@ jobs:
           F="tap/Formula/usedports.rb"
           /usr/bin/sed -i '' -E \
             "s#(arm64_sequoia: \")[^\"]*(\")#\1${BOTTLE_SHA}\2#" "$F"
+          # Keep a versioned copy so `brew install .../usedports@X.Y.Z` works.
+          # Homebrew maps usedports@0.1.0 -> class UsedportsAT010.
+          V="tap/Formula/usedports@${VERSION}.rb"
+          /usr/bin/sed -E "s/^class Usedports < Formula/class UsedportsAT${VERSION//./} < Formula/" "$F" > "$V"
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Formula/usedports.rb
+          git add "Formula/usedports.rb" "Formula/usedports@${VERSION}.rb"
           git commit -m "usedports ${VERSION}" || echo "no change"
           git push

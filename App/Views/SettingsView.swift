@@ -121,6 +121,10 @@ struct SettingsView: View {
                         Text("A new version is available.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                    } else if updater.lastCheckDate != nil && !updater.lastCheckFailed {
+                        Text("You're on the latest version.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     if updater.lastCheckFailed {
                         Text("Last update check failed.")

@@ -7,6 +7,12 @@ final class BrewOutdatedTests: XCTestCase {
         let result = BrewOutdated.parse(json.data(using: .utf8)!, formula: "usedports")
         XCTAssertEqual(result, .available(latest: "0.2.0"))
     }
+    func test_parse_tapQualifiedName() throws {
+        // brew reports the full tap-qualified name for tapped formulae.
+        let json = #"{"formulae":[{"name":"usedports/tap/usedports","installed_versions":["0.1.0"],"current_version":"0.1.1","pinned":false}],"casks":[]}"#
+        let result = BrewOutdated.parse(json.data(using: .utf8)!, formula: "usedports")
+        XCTAssertEqual(result, .available(latest: "0.1.1"))
+    }
     func test_parse_upToDate() throws {
         let json = #"{"formulae":[],"casks":[]}"#
         XCTAssertEqual(BrewOutdated.parse(json.data(using: .utf8)!, formula: "usedports"), .upToDate)

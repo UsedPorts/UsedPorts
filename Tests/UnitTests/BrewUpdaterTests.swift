@@ -54,6 +54,20 @@ final class BrewUpdaterTests: XCTestCase {
         // can always show a latest-version line.
         XCTAssertEqual(updater.latestVersion, updater.currentVersion)
     }
+    func test_checkNow_sameAsRunningVersion_notOffered() async {
+        // brew reports the brew-installed copy as outdated, but its "latest" equals
+        // the actually-running build — no update should be offered.
+        let runner = SeqRunner()
+        let updater = BrewUpdater(runner: runner, brewPath: "/opt/homebrew/bin/brew", formula: "usedports")
+        let cur = updater.currentVersion
+        runner.responses = [
+            (0, ""),
+            (0, #"{"formulae":[{"name":"usedports/tap/usedports","installed_versions":["0.0.1"],"current_version":"\#(cur)"}],"casks":[]}"#)
+        ]
+        await updater.checkNowAsync()
+        XCTAssertFalse(updater.updateAvailable)
+        XCTAssertEqual(updater.latestVersion, cur)
+    }
     func test_noBrew_disablesChecks() {
         let updater = BrewUpdater(runner: SeqRunner(), brewPath: nil, formula: "usedports")
         XCTAssertFalse(updater.canCheckNow)
@@ -81,5 +95,15 @@ final class BrewUpdaterTests: XCTestCase {
         await updater.installUpdateAsync()
         XCTAssertFalse(relaunched)
         XCTAssertFalse(updater.isInstalling)
+    }
+
+    // Guards the actual production fix: recent Homebrew refuses to load formulae
+    // from our third-party tap unless HOMEBREW_NO_REQUIRE_TAP_TRUST is set, which
+    // a Finder/Homebrew-launched app does not inherit. The real runner must inject
+    // it for every subprocess.
+    func test_commandRunner_injectsTapTrustEnv() async throws {
+        let res = try await CommandRunner().run("/usr/bin/env", args: [], timeout: 10)
+        XCTAssertTrue(res.stdoutString.contains("HOMEBREW_NO_REQUIRE_TAP_TRUST=1"),
+                      "env was:\n\(res.stdoutString)")
     }
 }

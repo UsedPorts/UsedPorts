@@ -10,8 +10,12 @@ public enum BrewOutdated: Equatable {
     }
 
     public static func parse(_ data: Data, formula: String) -> BrewOutdated {
+        // brew reports the tap-qualified name ("usedports/tap/usedports") for
+        // tapped formulae, so match the trailing token, not just the bare name.
         guard let payload = try? JSONDecoder().decode(Payload.self, from: data),
-              let match = payload.formulae.first(where: { $0.name == formula }) else {
+              let match = payload.formulae.first(where: {
+                  $0.name == formula || $0.name.hasSuffix("/" + formula)
+              }) else {
             return .upToDate
         }
         return .available(latest: match.current_version)

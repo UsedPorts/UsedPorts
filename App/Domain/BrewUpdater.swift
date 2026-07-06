@@ -54,11 +54,14 @@ public final class BrewUpdater: NSObject, ObservableObject {
             brew, args: ["outdated", "--json", "--formula", formula], timeout: 30
         ) else { lastCheckFailed = true; lastCheckDate = Date(); return }
         switch BrewOutdated.parse(res.stdout, formula: formula) {
-        case .available(let latest):
+        case .available(let latest) where latest.compare(currentVersion, options: .numeric) == .orderedDescending:
             updateAvailable = true; latestVersion = latest
-        case .upToDate:
-            // Up to date means the newest available == the installed build, so
-            // report the current version as the latest so the UI can always show it.
+        case .available, .upToDate:
+            // brew compares against the brew-installed copy, which can lag the
+            // actually-running build (e.g. a dev build newer than the tap). Only
+            // offer an update when the latest is genuinely newer than what's
+            // running; otherwise report current as latest so the UI still shows a
+            // latest-version line.
             updateAvailable = false; latestVersion = currentVersion
         }
         lastCheckFailed = false

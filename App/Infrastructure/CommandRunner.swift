@@ -33,6 +33,13 @@ public struct CommandRunner: CommandRunning {
         // LC_ALL overrides LANG/LC_TIME.
         var env = ProcessInfo.processInfo.environment
         env["LC_ALL"] = "C"
+        // Our own tap (usedports/tap) is a third-party tap, and recent Homebrew
+        // refuses to load formulae from an untrusted tap — `brew outdated` then
+        // errors instead of emitting JSON, so the update check silently reports
+        // "up to date". A Finder/Homebrew launch doesn't inherit the shell's
+        // HOMEBREW_NO_REQUIRE_TAP_TRUST, so set it here for every brew call.
+        // Inert for non-brew commands (e.g. `ps`).
+        env["HOMEBREW_NO_REQUIRE_TAP_TRUST"] = "1"
         process.environment = env
 
         let outPipe = Pipe()

@@ -14,6 +14,7 @@ final class AppHostStore: ObservableObject {
     let toasts: ToastCenter
     let updater: BrewUpdater
     let logStore: LogStore
+    let portNotifier: PinnedPortNotifier
 
     private var refreshCancellables: Set<AnyCancellable> = []
 
@@ -32,6 +33,9 @@ final class AppHostStore: ObservableObject {
         self.toasts = toasts
         self.updater = updater
         self.logStore = logStore
+        let portNotifier = PinnedPortNotifier(settings: settings)
+        self.portNotifier = portNotifier
+        viewModel.portNotifier = portNotifier
 
         // Seed the scanner config from persisted settings, then propagate runtime changes.
         viewModel.setRefreshInterval(settings.refreshIntervalSeconds)

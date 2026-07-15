@@ -38,6 +38,28 @@
     "%@" : {
 
     },
+    "%@ · %@ · PID %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@ · PID %3$@"
+          }
+        }
+      }
+    },
+    "%@ · PID %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · PID %2$@"
+          }
+        }
+      }
+    },
     "%@ / %@" : {
       "localizations" : {
         "en" : {
@@ -126,16 +148,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "새 버전이 있습니다."
-          }
-        }
-      }
-    },
-    "You're on the latest version." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이미 최신 버전입니다."
           }
         }
       }
@@ -255,6 +267,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "백그라운드 새로고침 간격"
+          }
+        }
+      }
+    },
+    "Background refresh is set to Pause, so notifications won't arrive while the window is hidden." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "백그라운드 새로고침이 '일시정지'로 설정되어 있어 창이 숨겨진 동안에는 알림이 오지 않습니다."
+          }
+        }
+      }
+    },
+    "Both" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "둘 다"
           }
         }
       }
@@ -992,6 +1025,61 @@
         }
       }
     },
+    "Notifications" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "알림"
+          }
+        }
+      }
+    },
+    "Notifications for UsedPorts are turned off in System Settings." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시스템 설정에서 UsedPorts 알림이 꺼져 있습니다."
+          }
+        }
+      }
+    },
+    "Notify when" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "알림 시점"
+          }
+        }
+      }
+    },
+    "Notify when pinned ports change" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "고정된 포트 변경 시 알림"
+          }
+        }
+      }
+    },
+    "Open System Settings…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시스템 설정 열기…"
+          }
+        }
+      }
+    },
     "Open UsedPorts" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1097,6 +1185,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "포트"
+          }
+        }
+      }
+    },
+    "Port %@ closed" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트 %@ 사용 종료"
+          }
+        }
+      }
+    },
+    "Port %@ opened" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트 %@ 사용 시작"
           }
         }
       }
@@ -1603,6 +1713,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "릴리스 보기"
+          }
+        }
+      }
+    },
+    "When a port closes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트 사용이 끝날 때"
+          }
+        }
+      }
+    },
+    "When a port opens" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "포트가 사용되기 시작할 때"
+          }
+        }
+      }
+    },
+    "You're on the latest version." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이미 최신 버전입니다."
           }
         }
       }

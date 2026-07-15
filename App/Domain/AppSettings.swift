@@ -8,6 +8,12 @@ public enum BackgroundRefreshMode: String, CaseIterable, Codable {
     case paused     // Stop polling while the window is hidden; resume on show.
 }
 
+public enum PinnedPortNotificationTrigger: String, CaseIterable, Codable {
+    case opened     // Notify only when a pinned port starts being used.
+    case closed     // Notify only when a pinned port stops being used.
+    case both       // Default: notify on both transitions.
+}
+
 @MainActor
 public final class AppSettings: ObservableObject {
     private static let showMenuBarKey = "settings.showMenuBar"
@@ -20,6 +26,8 @@ public final class AppSettings: ObservableObject {
     private static let showGenericProcessIconKey = "settings.showGenericProcessIcon"
     private static let refreshIntervalKey = "settings.refreshIntervalSeconds"
     private static let backgroundRefreshModeKey = "settings.backgroundRefreshMode"
+    private static let pinnedPortNotificationsKey = "settings.pinnedPortNotifications"
+    private static let pinnedPortNotificationTriggerKey = "settings.pinnedPortNotificationTrigger"
 
     /// Whether the NSStatusItem is shown in the menu bar. Changes are persisted to UserDefaults,
     /// and AppDelegate subscribes to this publisher to update statusItem.isVisible.
@@ -113,6 +121,23 @@ public final class AppSettings: ObservableObject {
         }
     }
 
+    /// When true, a user notification fires when a pinned port starts or stops being used
+    /// (filtered by pinnedPortNotificationTrigger). Off by default. See PinnedPortNotifier.
+    @Published public var pinnedPortNotificationsEnabled: Bool {
+        didSet {
+            guard oldValue != pinnedPortNotificationsEnabled else { return }
+            UserDefaults.standard.set(pinnedPortNotificationsEnabled, forKey: Self.pinnedPortNotificationsKey)
+        }
+    }
+
+    /// Which pinned-port transitions produce a notification: opened, closed, or both (default).
+    @Published public var pinnedPortNotificationTrigger: PinnedPortNotificationTrigger {
+        didSet {
+            guard oldValue != pinnedPortNotificationTrigger else { return }
+            UserDefaults.standard.set(pinnedPortNotificationTrigger.rawValue, forKey: Self.pinnedPortNotificationTriggerKey)
+        }
+    }
+
     /// Port numbers to display as status text next to the menu bar icon. Sorting is applied at display time.
     @Published public var pinnedPorts: Set<UInt16> {
         didSet {
@@ -173,6 +198,13 @@ public final class AppSettings: ObservableObject {
             self.backgroundRefreshMode = mode
         } else {
             self.backgroundRefreshMode = .slower
+        }
+        self.pinnedPortNotificationsEnabled = UserDefaults.standard.bool(forKey: Self.pinnedPortNotificationsKey)
+        if let raw = UserDefaults.standard.string(forKey: Self.pinnedPortNotificationTriggerKey),
+           let trigger = PinnedPortNotificationTrigger(rawValue: raw) {
+            self.pinnedPortNotificationTrigger = trigger
+        } else {
+            self.pinnedPortNotificationTrigger = .both
         }
         if let arr = UserDefaults.standard.array(forKey: Self.pinnedPortsKey) as? [Int] {
             self.pinnedPorts = Set(arr.compactMap { UInt16(exactly: $0) })

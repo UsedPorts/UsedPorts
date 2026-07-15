@@ -34,6 +34,9 @@ public final class PortListViewModel: ObservableObject {
     /// (AppSettings.showProcessIcons). Pruned each poll in applyBatch.
     let iconProvider = ProcessIconProvider()
 
+    /// Fed every poll batch to detect pinned ports opening/closing. Set by AppHostStore.
+    public var portNotifier: PinnedPortNotifier?
+
     private let customizationKey = "UsedPorts.tableColumnCustomization"
 
     public init(scanner: PortScanner, toasts: ToastCenter? = nil, augmenter: ProcessAugmenting = ProcessAugmenter()) {
@@ -322,6 +325,10 @@ public final class PortListViewModel: ObservableObject {
     }
 
     private func applyBatch(_ batch: [PortEntry]) {
+        // Before the no-change guard: the notifier needs the very first batch as its
+        // baseline even when it equals rawEntries (e.g. both empty). Unchanged batches
+        // produce no events, so this is cheap.
+        portNotifier?.ingest(batch)
         // Nothing changed since the last poll — skip the whole downstream rebuild
         // (publish, selection reconcile, table/menu re-render, augmentation pass).
         guard batch != rawEntries else { return }

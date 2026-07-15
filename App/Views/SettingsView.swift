@@ -5,6 +5,7 @@ struct SettingsView: View {
     @ObservedObject var viewModel: PortListViewModel
     @ObservedObject var updater: BrewUpdater
     @ObservedObject var logStore: LogStore
+    @ObservedObject var notifier: PinnedPortNotifier
 
     var body: some View {
         Form {
@@ -67,6 +68,37 @@ struct SettingsView: View {
                     Text("Pause").tag(BackgroundRefreshMode.paused)
                 }
                 .disabled(!viewModel.autoRefresh)
+            }
+            Section("Notifications") {
+                Toggle("Notify when pinned ports change", isOn: $settings.pinnedPortNotificationsEnabled)
+                    .onChange(of: settings.pinnedPortNotificationsEnabled) { _, on in
+                        if on { notifier.requestAuthorizationIfNeeded() }
+                    }
+                Picker("Notify when", selection: $settings.pinnedPortNotificationTrigger) {
+                    Text("When a port opens").tag(PinnedPortNotificationTrigger.opened)
+                    Text("When a port closes").tag(PinnedPortNotificationTrigger.closed)
+                    Text("Both").tag(PinnedPortNotificationTrigger.both)
+                }
+                .disabled(!settings.pinnedPortNotificationsEnabled)
+                .padding(.leading, 16)
+                if settings.pinnedPortNotificationsEnabled {
+                    if settings.backgroundRefreshMode == .paused {
+                        Label("Background refresh is set to Pause, so notifications won't arrive while the window is hidden.",
+                              systemImage: "exclamationmark.triangle")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                    if notifier.authorizationDenied {
+                        HStack(alignment: .firstTextBaseline) {
+                            Label("Notifications for UsedPorts are turned off in System Settings.",
+                                  systemImage: "exclamationmark.triangle")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                            Spacer()
+                            Button("Open System Settings…") { notifier.openSystemNotificationSettings() }
+                        }
+                    }
+                }
             }
             Section("Language") {
                 Picker("Language", selection: $settings.appLanguage) {
@@ -158,6 +190,13 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 500, height: 480)
         .padding()
-        .onAppear { settings.syncFromSystem() }
+        .onAppear {
+            settings.syncFromSystem()
+            notifier.refreshAuthorizationStatus()
+        }
+        // Coming back from System Settings re-activates the app — refresh the warning.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            notifier.refreshAuthorizationStatus()
+        }
     }
 }

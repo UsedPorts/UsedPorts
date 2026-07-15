@@ -296,6 +296,29 @@ final class PortListViewModelTests: XCTestCase {
         XCTAssertTrue(vm.windowVisible)
     }
 
+    // Cold-start regression: AppDelegate's early setAppActive(false) creates the
+    // stream before the view's bootstrapIfNeeded runs (which then no-ops), so the
+    // stream must scan immediately when there is no data yet — otherwise the list
+    // stays empty for a full poll interval after launch.
+    @MainActor
+    func test_coldStart_backgroundStreamStillScansImmediately() async {
+        let runner = StubRunner()
+        runner.nextStdout = Self.oneEntryLsof
+        let vm = PortListViewModel(scanner: PortScanner(runner: runner))
+        vm.setAppActive(false)               // launch order: before bootstrapIfNeeded
+        vm.bootstrapIfNeeded(interval: 10)   // no-op: stream already exists
+        // Poll up to ~2s « 10s interval: only an immediate first scan can land here.
+        var calls = 0
+        for _ in 0..<40 {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            calls = runner.capturedCalls.count
+            if calls >= 1 { break }
+        }
+        await vm.stopStream()
+        XCTAssertGreaterThanOrEqual(calls, 1,
+            "cold start must scan immediately even when the stream starts hidden")
+    }
+
     @MainActor
     func test_augmentation_notifiesObserversAndMerges() async {
         let runner = StubRunner()

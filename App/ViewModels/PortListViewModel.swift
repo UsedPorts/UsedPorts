@@ -275,7 +275,11 @@ public final class PortListViewModel: ObservableObject {
         }
         // Reschedule cadence without an immediate scan: keep showing the last scan and
         // let the next poll cycle refresh — whether going to background or foreground.
-        startStream(interval: currentBaseInterval, immediateScan: false)
+        // Exception: with no data yet there is nothing to keep showing — at cold start
+        // AppDelegate's early setAppActive(false) creates the stream before
+        // bootstrapIfNeeded runs, and a deferred first scan would leave the list empty
+        // for a full poll interval.
+        startStream(interval: currentBaseInterval, immediateScan: rawEntries.isEmpty)
     }
 
     /// Updates the base poll interval and restarts the stream if it's currently running.

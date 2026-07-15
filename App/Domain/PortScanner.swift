@@ -49,7 +49,13 @@ public actor PortScanner: PortScanning {
             }
             while !Task.isCancelled {
                 guard let self else { break }
-                if let entries = try? await self.scanOnce() {
+                // Re-check cancellation after the scan: cancelling mid-scan terminates
+                // lsof and CommandRunner returns its *partial* output. `continuation` is
+                // an instance property, so a cancelled poll task from before a stream
+                // restart would otherwise yield that truncated batch into the NEW stream —
+                // ports briefly "disappear", which flaps the UI and fires spurious
+                // pinned-port notifications.
+                if let entries = try? await self.scanOnce(), !Task.isCancelled {
                     await self.yield(entries)
                 }
                 try? await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))

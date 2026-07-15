@@ -68,6 +68,37 @@ final class PortScannerTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(calls, 1, "immediate scan should run promptly")
     }
 
+    // Restarting the stream cancels the previous poll task mid-scan; CommandRunner
+    // then returns lsof's *partial* output. That truncated batch (ports missing) must
+    // be dropped, not yielded into the new stream — it flaps the UI and fires
+    // spurious pinned-port "closed" notifications.
+    func test_streamRestart_dropsCancelledPartialScan() async {
+        final class SlowThenFastRunner: @unchecked Sendable, CommandRunning {
+            var callCount = 0
+            func run(_ path: String, args: [String], timeout: TimeInterval) async throws -> CommandResult {
+                callCount += 1
+                if callCount == 1 {
+                    // Emulate CommandRunner under cancellation: lsof is terminated and
+                    // the output collected so far (here: nothing) is returned as-is.
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    return CommandResult(exitCode: 15, stdout: Data(), stderr: Data())
+                }
+                let full = "p4821\ncnode\nuname\nf23\nPTCP\nn127.0.0.1:3000\nTST=LISTEN\n"
+                return CommandResult(exitCode: 0, stdout: Data(full.utf8), stderr: Data())
+            }
+        }
+        let runner = SlowThenFastRunner()
+        let scanner = PortScanner(runner: runner)
+        _ = await scanner.startPolling(intervalSeconds: 10, immediateFirstScan: true)
+        try? await Task.sleep(nanoseconds: 100_000_000)   // let scan 1 get in-flight
+        let stream = await scanner.startPolling(intervalSeconds: 10, immediateFirstScan: true)
+        var first: [PortEntry]?
+        for await batch in stream { first = batch; break }
+        await scanner.stopPolling()
+        XCTAssertEqual(first?.map(\.port), [3000],
+                       "cancelled scan's partial batch must not leak into the new stream")
+    }
+
     func test_scanOnce_elevatedTakesPrecedence() async throws {
         let runner = StubRunner()
         let scanner = PortScanner(runner: runner)

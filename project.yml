@@ -34,8 +34,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleName: UsedPorts
-        CFBundleShortVersionString: "0.1.1"
-        CFBundleVersion: "20260704"
+        CFBundleShortVersionString: "0.1.2"
+        CFBundleVersion: "20260720"
         LSApplicationCategoryType: public.app-category.developer-tools
         LSMinimumSystemVersion: "14.0"
         LSUIElement: NO

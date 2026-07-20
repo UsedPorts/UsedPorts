@@ -5,6 +5,17 @@ All notable changes to UsedPorts are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-07-20
+
+### New
+- **Pinned port notifications.** Turn them on in Settings to get a banner when a pinned port opens or closes, including the process behind it (name, address, PID). Notify on open, close, or both; off by default.
+- **Actionable warnings in Settings.** If notifications can't arrive — background refresh set to Pause, or permission turned off in System Settings — the Notifications section says so, with a shortcut straight to System Settings.
+
+### Fixed
+- The port list now appears immediately on launch instead of after the first poll interval (~3s).
+
+**Full Changelog**: https://github.com/UsedPorts/UsedPorts/compare/v0.1.1...v0.1.2
+
 ## [0.1.1] - 2026-07-04
 
 An efficiency-focused release — big cuts to CPU and memory churn during idle polling, refreshes, and window/focus changes.
@@ -54,5 +65,6 @@ brew install UsedPorts/tap/usedports
 
 Requires macOS 14 (Sonoma) or later on Apple Silicon.
 
+[0.1.2]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.2
 [0.1.1]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.1
 [0.1.0]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.0

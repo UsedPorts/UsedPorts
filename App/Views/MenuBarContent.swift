@@ -11,6 +11,7 @@ struct MenuBarContent: View {
 
     @State private var query: String = ""
     @State private var confirmKillRowId: String? = nil
+    @State private var collapsedPids: Set<Int> = []
 
     private let killer = KillSupervisor()
 
@@ -123,17 +124,47 @@ struct MenuBarContent: View {
             }
             Divider().padding(.vertical, 4)
         }
-        sectionLabel(String(localized: "All"))
-        if recentRows.isEmpty {
+        let rows = recentRows
+        HStack(spacing: 0) {
+            sectionLabel(String(localized: "All"))
+            if settings.groupByPid {
+                collapseAllButtons(rows)
+            }
+        }
+        if rows.isEmpty {
             Text("(no ports)")
                 .foregroundStyle(.secondary)
                 .font(.caption)
                 .padding(.vertical, 12)
         } else {
-            ForEach(recentRows) { row in
+            ForEach(rows) { row in
                 menuRowView(row)
             }
         }
+    }
+
+    /// One toggle: "Expand All" once every visible group is collapsed, otherwise "Collapse All".
+    @ViewBuilder
+    private func collapseAllButtons(_ rows: [MenuBarRow]) -> some View {
+        let pids = rows.compactMap { row -> Int? in
+            if case .group(let group) = row { return group.pid }
+            return nil
+        }
+        let allCollapsed = !pids.isEmpty && pids.allSatisfy(collapsedPids.contains)
+        Button {
+            if allCollapsed { collapsedPids.removeAll() } else { collapsedPids.formUnion(pids) }
+        } label: {
+            if allCollapsed {
+                Label(String(localized: "Expand All"), systemImage: "arrowtriangle.down.fill")
+            } else {
+                Label(String(localized: "Collapse All"), systemImage: "arrowtriangle.up.fill")
+            }
+        }
+        .buttonStyle(.borderless)
+        .font(.caption2)
+        .padding(.horizontal, 10)
+        .padding(.top, 6)
+        .padding(.bottom, 2)
     }
 
     @ViewBuilder
@@ -197,6 +228,9 @@ struct MenuBarContent: View {
     @ViewBuilder
     private func groupRowView(_ group: GroupRowData) -> some View {
         let confirming = confirmKillRowId == group.id
+        // Search results always show expanded so a collapsed group can't hide its matches.
+        let collapsible = query.isEmpty
+        let collapsed = collapsible && collapsedPids.contains(group.pid)
         PortGroupHeader(
             processName: group.processName,
             pid: group.pid,
@@ -204,6 +238,10 @@ struct MenuBarContent: View {
             showIcon: settings.showProcessIcons,
             icon: settings.showProcessIcons ? viewModel.processIcon(forPID: pid_t(group.pid), useGenericFallback: settings.showGenericProcessIcon) : nil,
             isConfirming: confirming,
+            isCollapsed: collapsible ? collapsed : nil,
+            onToggleCollapse: {
+                if collapsedPids.remove(group.pid) == nil { collapsedPids.insert(group.pid) }
+            },
             onKillRequest: { confirmKillRowId = group.id }
         )
         if confirming {
@@ -214,19 +252,21 @@ struct MenuBarContent: View {
                 onForceKill: { performKill(pid: Int32(group.pid), label: group.processName, force: true) }
             )
         }
-        ForEach(group.children) { child in
-            PortRow(
-                row: child,
-                showProcessLine: false,
-                showIcon: false,
-                icon: nil,
-                showKillButton: false,
-                leadingIndent: 16,
-                isPinned: settings.pinnedPorts.contains(child.port),
-                isConfirming: false,
-                onTogglePin: { settings.togglePin(port: child.port) },
-                onKillRequest: {}
-            )
+        if !collapsed {
+            ForEach(group.children) { child in
+                PortRow(
+                    row: child,
+                    showProcessLine: false,
+                    showIcon: false,
+                    icon: nil,
+                    showKillButton: false,
+                    leadingIndent: 16,
+                    isPinned: settings.pinnedPorts.contains(child.port),
+                    isConfirming: false,
+                    onTogglePin: { settings.togglePin(port: child.port) },
+                    onKillRequest: {}
+                )
+            }
         }
     }
 
@@ -705,12 +745,22 @@ private struct PortGroupHeader: View {
     let showIcon: Bool
     let icon: NSImage?
     let isConfirming: Bool
+    /// nil hides the chevron and disables toggling (search results).
+    let isCollapsed: Bool?
+    let onToggleCollapse: () -> Void
     let onKillRequest: () -> Void
 
     @State private var isHovering: Bool = false
 
     var body: some View {
         HStack(spacing: 6) {
+            if let isCollapsed {
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .rotationEffect(.degrees(isCollapsed ? 0 : 90))
+                    .frame(width: 10)
+            }
             if showIcon { ProcessIconBadge(icon: icon, size: 15) }
             Text(processName)
                 .font(.callout.weight(.semibold))
@@ -736,6 +786,7 @@ private struct PortGroupHeader: View {
         .background(rowBackground)
         .clipShape(RoundedRectangle(cornerRadius: 5))
         .contentShape(Rectangle())
+        .onTapGesture { if isCollapsed != nil { onToggleCollapse() } }
         .onHover { isHovering = $0 }
     }
 

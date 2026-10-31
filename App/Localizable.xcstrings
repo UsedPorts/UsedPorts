@@ -380,6 +380,16 @@
         }
       }
     },
+    "Collapse All" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 접기"
+          }
+        }
+      }
+    },
     "Copied %lld rows" : {
       "localizations" : {
         "ko" : {
@@ -565,6 +575,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "오류: %@"
+          }
+        }
+      }
+    },
+    "Expand All" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 펴기"
           }
         }
       }

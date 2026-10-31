@@ -21,6 +21,8 @@ public final class BrewUpdater: NSObject, ObservableObject {
     @Published public var updateAvailable: Bool = false
     @Published public var latestVersion: String?
     @Published public var lastCheckFailed: Bool = false
+    /// Why the last install attempt failed; nil when it succeeded or none ran yet.
+    @Published public var installError: String?
 
     private var autoTimer: Timer?
     private static let autoKey = "BrewUpdater.autoCheckEnabled"
@@ -51,17 +53,16 @@ public final class BrewUpdater: NSObject, ObservableObject {
         defer { isChecking = false }
         _ = try? await runner.run(brew, args: ["update"], timeout: 60)
         guard let res = try? await runner.run(
-            brew, args: ["outdated", "--json", "--formula", formula], timeout: 30
-        ) else { lastCheckFailed = true; lastCheckDate = Date(); return }
-        switch BrewOutdated.parse(res.stdout, formula: formula) {
-        case .available(let latest) where latest.compare(currentVersion, options: .numeric) == .orderedDescending:
+            brew, args: ["info", "--json=v2", "--formula", formula], timeout: 30
+        ), res.exitCode == 0, let latest = BrewInfo.stableVersion(res.stdout)
+        else { lastCheckFailed = true; lastCheckDate = Date(); return }
+        // Compare against the running build, not brew's installed keg: after an upgrade
+        // the keg can be current while ~/Applications still holds the old copy.
+        if latest.compare(currentVersion, options: .numeric) == .orderedDescending {
             updateAvailable = true; latestVersion = latest
-        case .available, .upToDate:
-            // brew compares against the brew-installed copy, which can lag the
-            // actually-running build (e.g. a dev build newer than the tap). Only
-            // offer an update when the latest is genuinely newer than what's
-            // running; otherwise report current as latest so the UI still shows a
-            // latest-version line.
+        } else {
+            // Report current as latest so the UI still shows a latest-version line
+            // (also covers a dev build newer than the tap).
             updateAvailable = false; latestVersion = currentVersion
         }
         lastCheckFailed = false
@@ -73,10 +74,19 @@ public final class BrewUpdater: NSObject, ObservableObject {
     func installUpdateAsync() async {
         guard let brew = brewPath, !isInstalling else { return }
         isInstalling = true
+        installError = nil
         defer { isInstalling = false }
-        guard let res = try? await runner.run(
-            brew, args: ["upgrade", formula], timeout: 600
-        ), res.exitCode == 0 else { return }
+        let res: CommandResult
+        do {
+            res = try await runner.run(brew, args: ["upgrade", formula], timeout: 600)
+        } catch {
+            installError = "brew upgrade: \(error.localizedDescription)"
+            return
+        }
+        guard res.exitCode == 0 else {
+            installError = "brew upgrade exited with \(res.exitCode)"
+            return
+        }
         (relaunchHandler ?? { [weak self] in self?.relaunch() })()
     }
 
@@ -86,12 +96,36 @@ public final class BrewUpdater: NSObject, ObservableObject {
         }
     }
 
-    private func relaunch() {
-        let appPath = Bundle.main.bundlePath
+    /// The formula's `usedports` launcher, next to brew: it copies the Cellar app over
+    /// ~/Applications/UsedPorts.app and opens it. Reopening our own bundle would just
+    /// relaunch the old copy, since `brew upgrade` never touches ~/Applications.
+    var launcherPath: String? {
+        brewPath.map { URL(fileURLWithPath: $0).deletingLastPathComponent().appendingPathComponent(formula).path }
+    }
+
+    /// Quits only once the launcher is running; otherwise stays up and reports why,
+    /// so a failed relaunch never leaves the user with no app.
+    func relaunch() {
+        guard let launcher = launcherPath, FileManager.default.isExecutableFile(atPath: launcher) else {
+            installError = "launcher not found: \(launcherPath ?? "(no brew)")"
+            return
+        }
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/bin/sh")
-        task.arguments = ["-c", "sleep 1; exec /usr/bin/open -n \"$1\"", "--", appPath]
-        try? task.run()
+        // Wait for this process to actually exit before the launcher runs: if `open` sees
+        // the old instance still alive it just re-activates it. Gives up after ~10s
+        // (e.g. termination was cancelled) instead of waiting forever.
+        task.arguments = [
+            "-c",
+            #"i=0; while kill -0 "$2" 2>/dev/null; do i=$((i+1)); [ "$i" -ge 50 ] && exit 1; sleep 0.2; done; exec "$1""#,
+            "--", launcher, String(getpid()),
+        ]
+        do {
+            try task.run()
+        } catch {
+            installError = "launcher: \(error.localizedDescription)"
+            return
+        }
         NSApp.terminate(nil)
     }
 

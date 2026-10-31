@@ -1,24 +1,21 @@
 import Foundation
 
-public enum BrewOutdated: Equatable {
-    case upToDate
-    case available(latest: String)
-
+/// Latest version the tap offers, read from `brew info --json=v2`. Compared against the
+/// running app rather than the brew-installed keg: `brew upgrade` only updates the Cellar,
+/// so the copy in ~/Applications can lag behind what brew considers installed.
+public enum BrewInfo {
     private struct Payload: Decodable {
-        struct Formula: Decodable { let name: String; let current_version: String }
+        struct Formula: Decodable {
+            struct Versions: Decodable { let stable: String? }
+            let versions: Versions
+        }
         let formulae: [Formula]
     }
 
-    public static func parse(_ data: Data, formula: String) -> BrewOutdated {
-        // brew reports the tap-qualified name ("usedports/tap/usedports") for
-        // tapped formulae, so match the trailing token, not just the bare name.
-        guard let payload = try? JSONDecoder().decode(Payload.self, from: data),
-              let match = payload.formulae.first(where: {
-                  $0.name == formula || $0.name.hasSuffix("/" + formula)
-              }) else {
-            return .upToDate
-        }
-        return .available(latest: match.current_version)
+    /// nil when the output isn't the expected JSON or carries no stable version.
+    public static func stableVersion(_ data: Data) -> String? {
+        guard let payload = try? JSONDecoder().decode(Payload.self, from: data) else { return nil }
+        return payload.formulae.first?.versions.stable
     }
 }
 

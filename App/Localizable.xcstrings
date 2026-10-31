@@ -1706,6 +1706,16 @@
     "UsedPorts" : {
 
     },
+    "Update failed: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "업데이트 실패: %@"
+          }
+        }
+      }
+    },
     "UsedPorts is not managed by Homebrew. Install via Homebrew to enable in-app updates." : {
       "localizations" : {
         "ko" : {

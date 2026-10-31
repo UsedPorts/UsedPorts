@@ -31,42 +31,59 @@ final class BrewUpdaterTests: XCTestCase {
         super.tearDown()
     }
 
-    func test_checkNow_setsUpdateAvailable() async {
+    private func infoJSON(stable: String) -> String {
+        #"{"formulae":[{"name":"usedports","versions":{"stable":"\#(stable)"}}],"casks":[]}"#
+    }
+
+    func test_checkNow_newerThanRunning_offersUpdate() async {
         let runner = SeqRunner()
-        runner.responses = [
-            (0, ""),
-            (0, #"{"formulae":[{"name":"usedports","installed_versions":["0.1.1"],"current_version":"0.2.0","pinned":false}],"casks":[]}"#)
-        ]
+        runner.responses = [(0, ""), (0, infoJSON(stable: "999.0.0"))]
         let updater = BrewUpdater(runner: runner, brewPath: "/opt/homebrew/bin/brew", formula: "usedports")
         await updater.checkNowAsync()
+        XCTAssertEqual(runner.calls.last?.1, ["info", "--json=v2", "--formula", "usedports"])
         XCTAssertTrue(updater.updateAvailable)
-        XCTAssertEqual(updater.latestVersion, "0.2.0")
+        XCTAssertEqual(updater.latestVersion, "999.0.0")
+        XCTAssertFalse(updater.lastCheckFailed)
         XCTAssertNotNil(updater.lastCheckDate)
         XCTAssertFalse(updater.isChecking)
     }
-    func test_checkNow_upToDate() async {
+    func test_checkNow_sameAsRunning_upToDate() async {
         let runner = SeqRunner()
-        runner.responses = [(0, ""), (0, #"{"formulae":[],"casks":[]}"#)]
         let updater = BrewUpdater(runner: runner, brewPath: "/opt/homebrew/bin/brew", formula: "usedports")
+        runner.responses = [(0, ""), (0, infoJSON(stable: updater.currentVersion))]
         await updater.checkNowAsync()
         XCTAssertFalse(updater.updateAvailable)
-        // When up to date, latest is reported as the current version so the UI
-        // can always show a latest-version line.
+        // Latest is reported as the current version so the UI can always show a latest-version line.
         XCTAssertEqual(updater.latestVersion, updater.currentVersion)
     }
-    func test_checkNow_sameAsRunningVersion_notOffered() async {
-        // brew reports the brew-installed copy as outdated, but its "latest" equals
-        // the actually-running build — no update should be offered.
+    func test_checkNow_olderThanRunning_notOffered() async {
+        // A dev build newer than the tap must not be offered a "downgrade".
         let runner = SeqRunner()
+        runner.responses = [(0, ""), (0, infoJSON(stable: "0.0.1"))]
         let updater = BrewUpdater(runner: runner, brewPath: "/opt/homebrew/bin/brew", formula: "usedports")
-        let cur = updater.currentVersion
-        runner.responses = [
-            (0, ""),
-            (0, #"{"formulae":[{"name":"usedports/tap/usedports","installed_versions":["0.0.1"],"current_version":"\#(cur)"}],"casks":[]}"#)
-        ]
         await updater.checkNowAsync()
         XCTAssertFalse(updater.updateAvailable)
-        XCTAssertEqual(updater.latestVersion, cur)
+        XCTAssertEqual(updater.latestVersion, updater.currentVersion)
+    }
+    func test_checkNow_unparseableOutput_marksFailed() async {
+        let runner = SeqRunner()
+        runner.responses = [(0, ""), (0, "not json")]
+        let updater = BrewUpdater(runner: runner, brewPath: "/opt/homebrew/bin/brew", formula: "usedports")
+        await updater.checkNowAsync()
+        XCTAssertTrue(updater.lastCheckFailed)
+        XCTAssertFalse(updater.updateAvailable)
+    }
+    func test_checkNow_brewInfoFails_marksFailed() async {
+        let runner = SeqRunner()
+        runner.responses = [(0, ""), (1, infoJSON(stable: "999.0.0"))]
+        let updater = BrewUpdater(runner: runner, brewPath: "/opt/homebrew/bin/brew", formula: "usedports")
+        await updater.checkNowAsync()
+        XCTAssertTrue(updater.lastCheckFailed)
+        XCTAssertFalse(updater.updateAvailable)
+    }
+    func test_launcherPath_sitsNextToBrew() {
+        let updater = BrewUpdater(runner: SeqRunner(), brewPath: "/opt/homebrew/bin/brew", formula: "usedports")
+        XCTAssertEqual(updater.launcherPath, "/opt/homebrew/bin/usedports")
     }
     func test_noBrew_disablesChecks() {
         let updater = BrewUpdater(runner: SeqRunner(), brewPath: nil, formula: "usedports")
@@ -95,6 +112,13 @@ final class BrewUpdaterTests: XCTestCase {
         await updater.installUpdateAsync()
         XCTAssertFalse(relaunched)
         XCTAssertFalse(updater.isInstalling)
+        XCTAssertEqual(updater.installError, "brew upgrade exited with 1")
+    }
+    func test_relaunch_missingLauncher_reportsErrorInsteadOfQuitting() {
+        // Must return (not terminate the test host) and surface why.
+        let updater = BrewUpdater(runner: SeqRunner(), brewPath: "/nonexistent/bin/brew", formula: "usedports")
+        updater.relaunch()
+        XCTAssertEqual(updater.installError, "launcher not found: /nonexistent/bin/usedports")
     }
 
     // Guards the actual production fix: recent Homebrew refuses to load formulae

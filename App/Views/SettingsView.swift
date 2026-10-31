@@ -163,6 +163,11 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    if let error = updater.installError {
+                        Text("Update failed: \(error)")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 } else {
                     Text("UsedPorts is not managed by Homebrew. Install via Homebrew to enable in-app updates.")
                         .font(.caption)

@@ -5,6 +5,13 @@ All notable changes to UsedPorts are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-10-31
+
+### New
+- **Collapsible process groups in the menu bar.** With grouping by PID on, click a process header to collapse or expand its ports, or use the Collapse All / Expand All toggle next to the list. Groups always show expanded in search results.
+
+**Full Changelog**: https://github.com/UsedPorts/UsedPorts/compare/v0.1.2...v0.1.3
+
 ## [0.1.2] - 2026-07-20
 
 ### New
@@ -65,6 +72,7 @@ brew install UsedPorts/tap/usedports
 
 Requires macOS 14 (Sonoma) or later on Apple Silicon.
 
+[0.1.3]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.3
 [0.1.2]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.2
 [0.1.1]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.1
 [0.1.0]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.0

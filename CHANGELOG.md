@@ -5,6 +5,14 @@ All notable changes to UsedPorts are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-11-07
+
+### Fixed
+- In-app updates now actually replace the running app. Previously the update installed but relaunched the old copy, and the next check reported it as up to date.
+- Update failures are shown in Settings instead of failing silently.
+
+**Full Changelog**: https://github.com/UsedPorts/UsedPorts/compare/v0.1.3...v0.1.4
+
 ## [0.1.3] - 2026-10-31
 
 ### New
@@ -72,6 +80,7 @@ brew install UsedPorts/tap/usedports
 
 Requires macOS 14 (Sonoma) or later on Apple Silicon.
 
+[0.1.4]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.4
 [0.1.3]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.3
 [0.1.2]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.2
 [0.1.1]: https://github.com/UsedPorts/UsedPorts/releases/tag/v0.1.1

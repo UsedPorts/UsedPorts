@@ -52,9 +52,10 @@ struct PortOutlineView: NSViewRepresentable {
         context.coordinator.applyExpansionState()
         context.coordinator.applySelection()
 
-        let scroll = NSScrollView()
+        let scroll = LegacyScrollerScrollView()
         scroll.hasVerticalScroller = true
         scroll.hasHorizontalScroller = true
+        scroll.autohidesScrollers = true
         scroll.documentView = outline
         scroll.borderType = .noBorder
         scroll.drawsBackground = false
@@ -430,5 +431,16 @@ private extension PortTableRow {
             children: nil,
             backingEntries: []
         )
+    }
+}
+
+/// Pins the legacy scroller style so the horizontal scroller gets its own strip below the
+/// rows instead of overlaying the last one. Overriding the property (not assigning once)
+/// also covers scrollers created lazily or re-styled later, e.g. when AppKit re-applies the
+/// system preference through the setter.
+final class LegacyScrollerScrollView: NSScrollView {
+    override var scrollerStyle: NSScroller.Style {
+        get { .legacy }
+        set { super.scrollerStyle = .legacy }
     }
 }
